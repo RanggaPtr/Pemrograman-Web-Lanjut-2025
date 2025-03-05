@@ -1,0 +1,1 @@
+<h1>INI ADALAH PAGE BABY KID CATEGORY </h1><?php /**PATH C:\laragon\www\Pemrograman Web Lanjut\PERTEMUAN 1\TUGAS(PointOfSales)\resources\views/babyKid.blade.php ENDPATH**/ ?>

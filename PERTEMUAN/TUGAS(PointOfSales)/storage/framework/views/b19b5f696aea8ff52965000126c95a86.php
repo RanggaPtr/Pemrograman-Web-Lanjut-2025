@@ -1,0 +1,1 @@
+<h1>INI ADALAH PAGE BEAUTY HEALTH CATEGORY </h1><?php /**PATH C:\laragon\www\Pemrograman Web Lanjut\PERTEMUAN 1\TUGAS(PointOfSales)\resources\views/beautyHealth.blade.php ENDPATH**/ ?>

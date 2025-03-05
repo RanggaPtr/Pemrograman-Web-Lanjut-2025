@@ -1,0 +1,1 @@
+<h1>Welcome <?php echo e($name); ?> with ID <?php echo e($id); ?></h1><?php /**PATH C:\laragon\www\Pemrograman Web Lanjut\PERTEMUAN 1\TUGAS(PointOfSales)\resources\views/users.blade.php ENDPATH**/ ?>
