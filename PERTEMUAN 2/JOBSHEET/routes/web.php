@@ -22,10 +22,14 @@ Route::get('/', function () {
 
 Route::get('/level',[LevelController::class,'index']);
 Route::get('/kategori',[KategoriController::class,'index']);
+
+// CRUD
 Route::get('/user',[UserController::class,'index']);
 Route::get('/user/tambah',[UserController::class,'tambah']);
-Route::post('/user/tambah_simpan',[UserController::class,'tambah_simpan']);
+Route::post('/user/tambah_simpan',[UserController::class,'tambah_simpan']); //post karena menhupload aksi
+
 Route::get('/user/ubah/{id}',[UserController::class,'ubah']);
-Route::get('/user/ubah_simpan/{id}',[UserController::class,'ubah_simpan']);
+Route::put('/user/ubah_simpan/{id}',[UserController::class,'ubah_simpan']); //put karena menhupload aksi
+
 Route::get('/user/hapus/{id}',[UserController::class,'hapus']);
 

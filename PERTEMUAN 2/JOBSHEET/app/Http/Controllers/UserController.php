@@ -10,6 +10,7 @@ class UserController extends Controller
 {
     public function index()
     {
+
         // tambah data user dengan eloquent model
         // $data=[
         //     'username'=>'customer-1',
@@ -36,8 +37,8 @@ class UserController extends Controller
         // UserModel::create($data);
 
         // // akses table
-        // $user =UserModel::all();
-        // return view('user',['data'=>$user]);
+        $user =UserModel::all();
+        return view('user',['data'=>$user]);
 
         // $user=UserModel::find(1);
         // return view('user',['data'=>$user]);
@@ -133,28 +134,44 @@ class UserController extends Controller
         // $user->wasChanged('nama'); // false
         // dd($user->wasChanged(['nama','username'])); //true
 
-        $user=UserModel::all();
-        return view('user',['data'=>$user]);
+        // $user=UserModel::all();
+        // return view('user',['data'=>$user]);
+
+        // $user=UserModel::with('level')->get();
+        // dd($user);
     }
 
+    // CONTROLLER ADD
     public function tambah(){
      return view('user_tambah') ;  
     }
 
     public function tambah_simpan(Request $request){
-        UserModel::create([
-            'username'=>$request->username,
-            'nama'=>$request->nama,
-            'password'=>Hash::make('$request->password'),
-            'level_id'=>$request->level_id
+        // memvalidasi untuk diisi semua agar tidak terjadi input kosong yang tidak diinginkan dan menyebabkan kekacauan sistem
+        $request->validate([
+            'username' => 'required',
+            'nama' => 'required',
+            'password' => 'required',
+            'level_id' => 'required'
         ]);
-        return redirect('/user');
+    
+        UserModel::create([
+            'username' => $request->username,
+            'nama' => $request->nama,
+            'password' => Hash::make($request->password),
+            'level_id' => $request->level_id
+        ]);
+    
+        return redirect('/user')->with('success', 'User berhasil ditambahkan');
     }
-
+    
+    
+    // CONTROLLER UPDATE
     public function ubah($id){
         $user = UserModel::find($id);
         return view('user_ubah',['data'=>$user]);
     }
+
     public function ubah_simpan($id,Request $request){
         $user = UserModel::find($id);
 

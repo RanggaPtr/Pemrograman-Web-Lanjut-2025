@@ -3,7 +3,7 @@
     <a href="/user">Kembali</a>
     <br><br>
 
-    <form method="post" action="/user/ubah_simpan/{{ $data->user_id }}">
+    <form method="post" action="/Pemrograman%20Web%20Lanjut/PERTEMUAN%202/JOBSHEET/public/user/ubah_simpan/{{ $data->user_id }}">
 
         {{ csrf_field() }}
         {{ method_field('PUT') }}

@@ -13,7 +13,7 @@
 
         <tr>
             <th>ID</th>
-            <th>Usernam</th>
+            <th>Username</th>
             <th>Nama</th>
             <th>ID Level Pengguna</th>
             <th>Aksi</th>
@@ -22,10 +22,10 @@
         
         <tr>
             <td>{{$d->user_id  }}</td>
-            <td>{{$d->usernam  }}</td>
+            <td>{{$d->username  }}</td>
             <td>{{$d->nama  }}</td>
-            <td>{{$d->level_id  }}</td>\
-            <td><a href="/user/ubah/{{ $d->user_id }}">Ubah</a> | <a href="/user/hapus/">Hapus</a> </td>
+            <td>{{$d->level_id  }}</td>
+            <td><a href="/Pemrograman%20Web%20Lanjut/PERTEMUAN%202/JOBSHEET/public/user/ubah/{{ $d->user_id }}">Ubah</a> | <a href="/Pemrograman%20Web%20Lanjut/PERTEMUAN%202/JOBSHEET/public/user/hapus/{{ $d->user_id }}">Hapus</a> </td>
         </tr>
         @endforeach
         
