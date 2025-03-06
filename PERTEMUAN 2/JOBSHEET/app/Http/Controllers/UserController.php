@@ -37,8 +37,8 @@ class UserController extends Controller
         // UserModel::create($data);
 
         // // akses table
-        $user =UserModel::all();
-        return view('user',['data'=>$user]);
+        // $user =UserModel::all();
+        // return view('user',['data'=>$user]);
 
         // $user=UserModel::find(1);
         // return view('user',['data'=>$user]);
@@ -134,11 +134,15 @@ class UserController extends Controller
         // $user->wasChanged('nama'); // false
         // dd($user->wasChanged(['nama','username'])); //true
 
-        // $user=UserModel::all();
-        // return view('user',['data'=>$user]);
+        $user=UserModel::all();
+        return view('user',['data'=>$user]);
 
-        // $user=UserModel::with('level')->get();
+        // eror
+        // $user=UserModel::with('level_id')->get();
         // dd($user);
+        
+        // $user=UserModel::with('level')->get();
+        // return view('user',['data'=>$user]);
     }
 
     // CONTROLLER ADD

@@ -9,6 +9,8 @@
 
 <body>
     <h1>Data User</h1>
+    <a href="/Pemrograman%20Web%20Lanjut/PERTEMUAN%202/JOBSHEET/public/user/tambah/">Tambah User</a>
+    <hr>
     <table border="1" cellpading="2" cellspacing="0">
 
         <tr>
