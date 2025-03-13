@@ -65,4 +65,122 @@ class LevelController extends Controller
             ->rawColumns(['aksi']) // Menandakan kolom aksi adalah HTML
             ->make(true);
     }
+
+     // Menampilkan halaman form tambah user
+     public function create()
+     {
+         $breadcrumb = (object) [
+             'title' => 'Tambah Level',
+             'list' => ['Home', 'Level', 'Tambah']
+         ];
+ 
+         $page = (object) [
+             'title' => 'Tambah Level baru'
+         ];
+ 
+         $level = LevelModel::all(); // ambil data level untuk ditampilkan di form
+         $activeMenu = 'level'; // set menu yang aktif
+ 
+         return view('level.create', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
+     }
+ 
+     // Menyimpan data user baru
+     public function store(Request $request)
+     {
+         $request->validate([
+             'level_id' => 'required|integer' ,// level_id harus diisi dan berupa angka
+             // username harus diisi, berupa string, minimal 3 karakter, dan bernilai unik di tabel m_user kolom username
+             'level_kode' => 'required|string|min:3',
+             'level_nama' => 'required|string|max:20', // nama harus diisi, berupa string, dan maksimal 100 karakter
+         ]);
+ 
+         LevelModel::create([
+             'level_id' => $request->level_id,
+             'level_kode' => $request->level_kode,
+             'level_nama' => $request->level_nama
+         ]);
+ 
+         return redirect('/level')->with('success', 'Data user berhasil disimpan');
+     }
+ 
+     // Menampilkan detail user
+     public function show(string $id)
+     {
+         $user = LevelModel::with('level')->find($id);
+ 
+         $breadcrumb = (object) [
+             'title' => 'Detail Level',
+             'list' => ['Home', 'Level', 'Detail']
+         ];
+ 
+         $page = (object) [
+             'title' => 'Detail Level'
+         ];
+ 
+         $activeMenu = 'level'; // set menu yang sedang aktif
+ 
+         return view('level.show', ['breadcrumb' => $breadcrumb, 'page' => $page, 'user' => $user, 'activeMenu' => $activeMenu]);
+     }
+ 
+     // Menampilkan halaman form edit user
+     public function edit(string $id)
+     {
+         $user = LevelModel::find($id);
+         $level = LevelModel::all();
+ 
+         $breadcrumb = (object) [
+             'title' => 'Edit Level',
+             'list' => ['Home', 'Level', 'Edit']
+         ];
+ 
+         $page = (object) [
+             'title' => 'Edit Level'
+         ];
+ 
+         $activeMenu = 'level'; // set menu yang sedang aktif
+ 
+         return view('level.edit', [
+             'breadcrumb' => $breadcrumb,
+             'page' => $page,
+             'user' => $user,
+             'level' => $level,
+             'activeMenu' => $activeMenu
+         ]);
+     }
+ 
+     // Menyimpan perubahan data user
+     public function update(Request $request, string $id)
+     {
+         $request->validate([
+            'level_id' => 'required|integer' ,// level_id harus diisi dan berupa angka
+            // username harus diisi, berupa string, minimal 3 karakter, dan bernilai unik di tabel m_user kolom username
+            'level_kode' => 'required|string|min:3',
+            'level_nama' => 'required|string|max:20', // nama harus diisi, berupa string, dan maksimal 100 karakter
+         ]);
+ 
+         LevelModel::find($id)->update([
+             'level_id' => $request->level_id,
+             'level_kode' => $request->level_kode,
+             'level_nama' => $request->level_nama
+         ]);
+ 
+         return redirect('/level')->with('success', 'Data user berhasil diubah');
+     }
+ 
+     // Menghapus data user
+     public function destroy(string $id)
+     {
+         $check = LevelModel::find($id); // untuk mengecek apakah data user dengan id yang dimaksud ada atau tidak
+         if (!$check) {
+             return redirect('/level')->with('error', 'Data user tidak ditemukan');
+         }
+ 
+         try {
+             LevelModel::destroy($id); // Hapus data level
+             return redirect('/level')->with('success', 'Data user berhasil dihapus');
+         } catch (\Illuminate\Database\QueryException $e) {
+             // Jika terjadi error ketika menghapus data, redirect kembali ke halaman dengan membawa pesan error
+             return redirect('/level')->with('error', 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
+         }
+     }
 }
