@@ -71,14 +71,14 @@
                         orderable: false,
                         searchable: false
                     }, {
-                        data: "username",
+                        data: "level_id",
                         className: "",
                         // orderable: true, jika ingin kolom ini bisa diurutkan  
                         orderable: true,
                         // searchable: true, jika ingin kolom ini bisa dicari 
                         searchable: true
                     }, {
-                        data: "nama",
+                        data: "level_kode",
                         className: "",
                         orderable: true,
                         searchable: true
@@ -96,7 +96,7 @@
                     }]
                 });
 
-                $('#level_id').on('change', function() {
+                $('level_id').on('change', function() {
                     dataUser.ajax.reload();
                 });
 

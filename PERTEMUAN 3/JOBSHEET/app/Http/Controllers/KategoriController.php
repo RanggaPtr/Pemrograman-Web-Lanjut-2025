@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KategoriModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 class KategoriController extends Controller
@@ -23,9 +24,22 @@ class KategoriController extends Controller
         // $row=DB::table('m_kategori')->where('kategori_kode','SNK')->delete();
         // return 'Delete data berhasil. jumlah data yang dihapus: '. $row .' baris';
 
-        $data=DB::table('m_kategori')->get();
-        return view('kategori',['data'=>$data]);
+        // $data=DB::table('m_kategori')->get();
+        // return view('kategori',['data'=>$data]);
 
+        $breadcrumb = (object)[
+            'title' => 'Kategori User',
+            'list' => ['Home', 'kategori']
+        ];
 
+        $page = (object)[
+            'title' => 'Daftar user yang terdaftar dalam sistem'
+        ];
+
+        $activeMenu = 'user'; //set menu yang aktif
+
+        $level=KategoriModel::all(); //ambil data level untuk filter level
+
+        return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page,'level'=>$level, 'activeMenu' => $activeMenu]);
     }
 }

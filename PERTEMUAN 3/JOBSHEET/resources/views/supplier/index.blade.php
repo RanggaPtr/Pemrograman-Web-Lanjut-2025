@@ -96,7 +96,7 @@
                     }]
                 });
 
-                $('#level_id').on('change', function() {
+                $('level_id').on('change', function() {
                     dataUser.ajax.reload();
                 });
 

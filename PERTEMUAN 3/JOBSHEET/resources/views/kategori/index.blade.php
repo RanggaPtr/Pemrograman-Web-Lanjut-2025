@@ -35,10 +35,9 @@
         <table class="table table-bordered table-striped table-hover table-sm" id="table_user">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Nama</th>
-                    <th>Level Pengguna</th>
+                    <th>Level ID</th>
+                    <th>Level Kode</th>
+                    <th>Level Nama</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -96,7 +95,7 @@
                     }]
                 });
 
-                $('#level_id').on('change', function() {
+                $('level_id').on('change', function() {
                     dataUser.ajax.reload();
                 });
 

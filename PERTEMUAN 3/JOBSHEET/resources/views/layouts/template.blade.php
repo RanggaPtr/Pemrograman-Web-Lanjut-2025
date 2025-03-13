@@ -4,44 +4,40 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name','PWL Laravel Starter Code') }}</title>
+    <title>{{ config('app.name', 'PWL Laravel Starter Code')}}</title>
 
-
-    <!-- untuk mengirimkan token laravel CSRF pada setiap request AJAX -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-
     <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('Adminlte/plugins/fontawesome-free/css/all.min.css')}}">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('Adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css')}}">
+    <link rel="stylesheet"
+        href="{{ asset('Adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css')}}">
+    <link rel="stylesheet" href="{{ asset('Adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css')}}">
     <!-- Theme style -->
-    <link rel="stylesheet" href="{{ asset("adminlte/dist/css/adminlte.min.css") }}">
+    <link rel="stylesheet" href="{{ asset('Adminlte/dist/css/adminlte.min.css')}}">
 
-    <!-- Datatables -->
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
-
-    @stack('css') <!-- Digunakan untuk menambahkan custom css dari perintah push('css') pada masing-masing view -->
-
+    @stack('css')
 </head>
 
 <body class="hold-transition sidebar-mini">
     <!-- Site wrapper -->
     <div class="wrapper">
         <!-- Navbar -->
-        <!-- menggunakan templating di header.blade.php biar rapi -->
         @include('layouts.header')
         <!-- /.navbar -->
 
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
-            <!-- <a href="../../index3.html" class="brand-link"> -->
-            <a href="{{ url('/') }}" class="brand-link">
-                <img src="{{  asset('adminlte/dist/img/AdminLTELogo.png')}}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">PWL STARTER KODE</span>
+            <a href="{{ url('/')}}" class="brand-link">
+                <img src="{{ asset('Adminlte')}}/dist/img/AdminLTELogo.png" alt="AdminLTE Logo"
+                    class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">PWL - Starter Code</span>
             </a>
 
             <!-- Sidebar -->
@@ -62,47 +58,33 @@
         </div>
         <!-- /.content-wrapper -->
         @include('layouts.footer')
-
     </div>
     <!-- ./wrapper -->
 
     <!-- jQuery -->
-    <!-- <script src="../../plugins/jquery/jquery.min.js"></script> -->
-    <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
-
+    <script src="{{ asset('Adminlte/plugins/jquery/jquery.min.js') }}"></script>
     <!-- Bootstrap 4 -->
-    <!-- <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script> -->
-    <script src="{{ asset('adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
-    <!-- AdminLTE App -->
-    <!-- <script src="../../dist/js/adminlte.min.js"></script> -->
-    <script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
-
-    <!-- Datatables & plugins -->
-    <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/jszip.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/pdfmake.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/pdfmake/vfs_fonts.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
-    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.colvis.min.js') }}"></script>
-
+    <script src="{{ asset('Adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <!--DataTables & Plugins -->
+    <script src="{{ asset('Adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/jszip/jszip.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/pdfmake/pdfmake.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/pdfmake/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
+    <script src="{{ asset('Adminlte/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
+    <!--AdminLTE App -->
+    <script src="{{ asset('Adminlte/dist/js/adminlte.min.js') }}"></script>
     <script>
         // Untuk mengirimkan token Laravel CSRF pada setiap request ajax
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-        });
+        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
     </script>
-
-
-    <!-- AdminLTE for demo purposes -->
-    <!-- <script src="../../dist/js/demo.js"></script> -->
+    @stack('js') <!-- Digunakan untuk memanggil custom js dari perintah push('js') pada masing-masing view -->
 </body>
 
 </html>
