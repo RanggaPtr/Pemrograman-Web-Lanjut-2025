@@ -12,6 +12,10 @@ class KategoriModel extends Model
     protected $table = 'm_kategori';
     protected $primaryKey = 'kategori_id';
 
+    protected $fillable = [
+        'kategori_kode',  // Allow mass assignment for level_kode
+        'kategori_nama',  // Allow mass assignment for level_nama
+    ];
     // Relasi ke User (jika ada relasi dengan User)
     public function KategoriModel(): HasMany
     {

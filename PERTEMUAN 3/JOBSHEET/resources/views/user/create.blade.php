@@ -26,8 +26,7 @@
             <div class="form-group row">
                 <label class="col-1 control-label col-form-label">Username</label>
                 <div class="col-11">
-                    <input type="text" class="form-control" id="username" name="username" value="{{ 
-old('username') }}" required>
+                    <input type="text" class="form-control" id="username" name="username" value="{{ old('username') }}" required>
                     @error('username')
                     <small class="form-text text-danger">{{ $message }}</small>
                     @enderror
@@ -36,8 +35,7 @@ old('username') }}" required>
             <div class="form-group row">
                 <label class="col-1 control-label col-form-label">Nama</label>
                 <div class="col-11">
-                    <input type="text" class="form-control" id="nama" name="nama" value="{{ 
-old('nama') }}" required>
+                    <input type="text" class="form-control" id="nama" name="nama" value="{{ old('nama') }}" required>
                     @error('nama')
                     <small class="form-text text-danger">{{ $message }}</small>
                     @enderror

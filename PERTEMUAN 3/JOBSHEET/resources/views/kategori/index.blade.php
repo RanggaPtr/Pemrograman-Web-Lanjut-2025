@@ -23,7 +23,7 @@
                     <div class="col-3">
                         <select class="form-control" id="kategori_id" name="kategori_id" required>
                             <option value="">- Semua -</option>
-                            @foreach($level as $item)
+                            @foreach($kategori as $item)  <!-- Corrected $level to $kategori -->
                             <option value="{{ $item->kategori_id }}">{{ $item->kategori_nama }}</option>
                             @endforeach
                         </select>
@@ -37,17 +37,14 @@
                 <tr>
                     <th>Kategori ID</th>
                     <th>Kategori Kode</th>
-                    <th>Level Nama</th>
+                    <th>Kategori Nama</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
         </table>
-        
-        
     </div>
 </div>
 @endsection
-
 
 @push('css')
 @endpush
@@ -62,7 +59,7 @@
                 dataType: "json",
                 type: "POST",
                 data: function(d) {
-                    d.kategori_id = $('#kategori_id').val();
+                    d.kategori_id = $('#kategori_id').val();  // Corrected filter variable
                 }
             },
             columns: [{

@@ -3,216 +3,200 @@
 namespace App\Http\Controllers;
 
 use App\Models\BarangModel;
+use App\Models\KategoriModel;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
 class BarangController extends Controller
 {
-    public function index()
+     // Display the list of categories (kategori)
+     public function index()
+     {
+         $breadcrumb = (object)[
+             'title' => 'Daftar Kategori',
+             'list' => ['Home', 'Kategori']
+         ];
+ 
+         $page = (object)[
+             'title' => 'Daftar Kategori yang terdaftar dalam sistem'
+         ];
+ 
+         $activeMenu = 'kategori'; // Set active menu
+ 
+         $kategori = KategoriModel::all(); // Fetch all categories (kategori)
+ 
+         return view('kategori.index', [
+             'breadcrumb' => $breadcrumb,
+             'page' => $page,
+             'kategori' => $kategori,  // Pass the kategori data to the view
+             'activeMenu' => $activeMenu
+         ]);
+     }
+ 
+     // Fetch the data for DataTables
+     public function list(Request $request)
+     {
+         $kategoriQuery = KategoriModel::select('kategori_id', 'kategori_kode', 'kategori_nama');
+ 
+         // Filter based on kategori_kode if passed in the request
+         if ($request->kategori_kode) {
+             $kategoriQuery->where('kategori_kode', $request->kategori_kode);
+         }
+ 
+         return DataTables::of($kategoriQuery)
+             ->addIndexColumn()  // Add index column
+             ->addColumn('aksi', function ($kategori) {
+                 $btn  = '<a href="' . url('/kategori/' . $kategori->kategori_id) . '" class="btn btn-info btn-sm">Detail</a> ';
+                 $btn .= '<a href="' . url('/kategori/' . $kategori->kategori_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
+                 $btn .= '<form class="d-inline-block" method="POST" action="' . url('/kategori/' . $kategori->kategori_id) . '">'
+                     . csrf_field() . method_field('DELETE') . 
+                     '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
+                 return $btn;
+             })
+             ->rawColumns(['aksi'])
+             ->make(true);
+     }
+
+    // Show the form to create a new barang (product)
+    public function create()
     {
-        // tambah data user dengan eloquent model
-        // $data=[
-        //     'username'=>'customer-1',
-        //     'nama'=>'Pelanggan',
-        //     'password'=>Hash::make('12345'),
-        //     'level_id'=>4
-        // ];
-
-        // $data=[
-        //     'nama'=>'Pelanggan Pertama',
-        // ];
-        // UserModel::where('username','customer-1')->update($data);
-
-        // // akses table
-        // $user =UserModel::all();
-        // return view('user',['data'=>$user]);
-
-        // menampilkan halaman aawal user
-        $breadcrumb = (object)[
-            'title' => 'Daftar Barang',
-            'list' => ['Home', 'barang']
+        $breadcrumb = (object) [
+            'title' => 'Tambah Barang',
+            'list' => ['Home', 'Barang', 'Tambah']
         ];
 
-        $page = (object)[
-            'title' => 'Daftar barang yang terdaftar dalam sistem'
+        $page = (object) [
+            'title' => 'Tambah Barang Baru'
         ];
 
-        $activeMenu = 'barang'; //set menu yang aktif
+        $kategori = KategoriModel::all(); // Get all categories
 
-        $level = BarangModel::all(); //ambil data level untuk filter level
+        $activeMenu = 'barang'; // Set active menu
 
-        return view('barang.index', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
+        return view('barang.create', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'kategori' => $kategori, // Pass the kategori data to the view
+            'activeMenu' => $activeMenu
+        ]);
     }
 
-    // Ambil data user dalam bentuk json untuk datatables
-    // public function list(Request $request)
-    // {
-    //     $barang = BarangModel::select('barang_id','kategori_id','barang_kode','barang_nama','harga_beli','harga_jual');
-
-    //     // filter data user bedasarkan level_id
-    //     if ($request->level_id) {
-    //         $barang->where('barang_id', $request->level_id);
-    //     }
-
-    //     return DataTables::of($barang)
-    //         // menambahkan kolom index / no urut (default nama kolom: DT_RowIndex)
-    //         ->addIndexColumn()
-    //         ->addColumn('aksi', function ($barang) {  // menambahkan kolom aksi
-    //             $btn  = '<a href="' . url('/barang/' . $barang->barang_id) . '" class="btn btn-info btn-sm">Detail</a> ';
-    //             $btn .= '<a href="' . url('/barang/' . $barang->user_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
-    //             $btn .= '<form class="d-inline-block" method="POST" action="' . url('/barang/' . $barang->barang_id) . '">'
-    //                 . csrf_field() . method_field('DELETE') .
-    //                 '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
-    //             return $btn;
-    //         })
-    //         ->rawColumns(['aksi']) // memberitahu bahwa kolom aksi adalah html
-    //         ->make(true);
-    // }
-    public function list(Request $request)
+    // Store a new barang (product)
+    public function store(Request $request)
     {
-        $barang = BarangModel::with('kategori') // Eager load the 'kategori' relationship
-            ->select('barang_id', 'kategori_id', 'barang_kode', 'barang_nama', 'harga_beli', 'harga_jual');
+        $request->validate([
+            'barang_kode' => 'required|string|min:3|unique:m_barang,barang_kode',  // Ensure barang_kode is unique
+            'barang_nama' => 'required|string|max:100', // Validate barang_nama
+            'harga_beli' => 'required|numeric', // Validate harga_beli
+            'harga_jual' => 'required|numeric', // Validate harga_jual
+            'kategori_id' => 'required|exists:m_kategori,kategori_id', // Validate kategori_id exists
+        ]);
 
-        // Optional: filter based on 'barang_id' (not 'level_id' as in your current code)
-        if ($request->barang_id) {
-            $barang->where('barang_id', $request->barang_id);
+        BarangModel::create([
+            'barang_kode' => $request->barang_kode,
+            'barang_nama' => $request->barang_nama,
+            'harga_beli' => $request->harga_beli,
+            'harga_jual' => $request->harga_jual,
+            'kategori_id' => $request->kategori_id
+        ]);
+
+        return redirect('/barang')->with('success', 'Data barang berhasil disimpan');
+    }
+
+    // Show the details of a barang (product)
+    public function show(string $id)
+    {
+        $barang = BarangModel::find($id);
+
+        if (!$barang) {
+            return redirect('/barang')->with('error', 'Data barang tidak ditemukan');
         }
 
-        return DataTables::of($barang)
-            ->addIndexColumn()
-            ->addColumn('aksi', function ($barang) {
-                $btn  = '<a href="' . url('/barang/' . $barang->barang_id) . '" class="btn btn-info btn-sm">Detail</a> ';
-                $btn .= '<a href="' . url('/barang/' . $barang->barang_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
-                $btn .= '<form class="d-inline-block" method="POST" action="' . url('/barang/' . $barang->barang_id) . '">'
-                    . csrf_field() . method_field('DELETE') .
-                    '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
-                return $btn;
-            })
-            ->rawColumns(['aksi'])
-            ->make(true);
+        $breadcrumb = (object) [
+            'title' => 'Detail Barang',
+            'list' => ['Home', 'Barang', 'Detail']
+        ];
+
+        $page = (object) [
+            'title' => 'Detail Barang'
+        ];
+
+        $activeMenu = 'barang'; // Set active menu
+
+        return view('barang.show', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'barang' => $barang,
+            'activeMenu' => $activeMenu
+        ]);
     }
 
+    // Show the form to edit a barang (product)
+    public function edit(string $id)
+    {
+        $barangData = BarangModel::find($id);
 
-    // // Menampilkan halaman form tambah user
-    // public function create()
-    // {
-    //     $breadcrumb = (object) [
-    //         'title' => 'Tambah User',
-    //         'list' => ['Home', 'User', 'Tambah']
-    //     ];
+        if (!$barangData) {
+            return redirect('/barang')->with('error', 'Data barang tidak ditemukan');
+        }
 
-    //     $page = (object) [
-    //         'title' => 'Tambah user baru'
-    //     ];
+        $kategori = KategoriModel::all(); // Get all categories
 
-    //     $level = LevelModel::all(); // ambil data level untuk ditampilkan di form
-    //     $activeMenu = 'user'; // set menu yang aktif
+        $breadcrumb = (object) [
+            'title' => 'Edit Barang',
+            'list' => ['Home', 'Barang', 'Edit']
+        ];
 
-    //     return view('user.create', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
-    // }
+        $page = (object) [
+            'title' => 'Edit Barang'
+        ];
 
-    // // Menyimpan data user baru
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         // username harus diisi, berupa string, minimal 3 karakter, dan bernilai unik di tabel m_user kolom username
-    //         'username' => 'required|string|min:3|unique:m_user,username',
-    //         'nama' => 'required|string|max:100', // nama harus diisi, berupa string, dan maksimal 100 karakter
-    //         'password' => 'required|min:5', // password harus diisi dan minimal 5 karakter
-    //         'level_id' => 'required|integer' // level_id harus diisi dan berupa angka
-    //     ]);
+        $activeMenu = 'barang'; // Set active menu
 
-    //     UserModel::create([
-    //         'username' => $request->username,
-    //         'nama' => $request->nama,
-    //         'password' => bcrypt($request->password), // password dienkripsi sebelum disimpan
-    //         'level_id' => $request->level_id
-    //     ]);
+        return view('barang.edit', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'barangData' => $barangData, // Pass the current barang data to the view
+            'kategori' => $kategori, // Pass the categories to the view
+            'activeMenu' => $activeMenu
+        ]);
+    }
 
-    //     return redirect('/user')->with('success', 'Data user berhasil disimpan');
-    // }
+    // Update the barang (product) data
+    public function update(Request $request, string $id)
+    {
+        $request->validate([
+            'barang_kode' => 'required|string|min:3|unique:m_barang,barang_kode,' . $id . ',barang_id', // Ensure unique kode
+            'barang_nama' => 'required|string|max:100', // Validate barang_nama
+            'harga_beli' => 'required|numeric', // Validate harga_beli
+            'harga_jual' => 'required|numeric', // Validate harga_jual
+            'kategori_id' => 'required|exists:m_kategori,kategori_id', // Validate kategori_id exists
+        ]);
 
-    // // Menampilkan detail user
-    // public function show(string $id)
-    // {
-    //     $user = UserModel::with('level')->find($id);
+        BarangModel::find($id)->update([
+            'barang_kode' => $request->barang_kode,
+            'barang_nama' => $request->barang_nama,
+            'harga_beli' => $request->harga_beli,
+            'harga_jual' => $request->harga_jual,
+            'kategori_id' => $request->kategori_id
+        ]);
 
-    //     $breadcrumb = (object) [
-    //         'title' => 'Detail User',
-    //         'list' => ['Home', 'User', 'Detail']
-    //     ];
+        return redirect('/barang')->with('success', 'Data barang berhasil diubah');
+    }
 
-    //     $page = (object) [
-    //         'title' => 'Detail user'
-    //     ];
+    // Delete a barang (product)
+    public function destroy(string $id)
+    {
+        $check = BarangModel::find($id);
+        if (!$check) {
+            return redirect('/barang')->with('error', 'Data barang tidak ditemukan');
+        }
 
-    //     $activeMenu = 'user'; // set menu yang sedang aktif
-
-    //     return view('user.show', ['breadcrumb' => $breadcrumb, 'page' => $page, 'user' => $user, 'activeMenu' => $activeMenu]);
-    // }
-
-    // // Menampilkan halaman form edit user
-    // public function edit(string $id)
-    // {
-    //     $user = UserModel::find($id);
-    //     $level = LevelModel::all();
-
-    //     $breadcrumb = (object) [
-    //         'title' => 'Edit User',
-    //         'list' => ['Home', 'User', 'Edit']
-    //     ];
-
-    //     $page = (object) [
-    //         'title' => 'Edit user'
-    //     ];
-
-    //     $activeMenu = 'user'; // set menu yang sedang aktif
-
-    //     return view('user.edit', [
-    //         'breadcrumb' => $breadcrumb,
-    //         'page' => $page,
-    //         'user' => $user,
-    //         'level' => $level,
-    //         'activeMenu' => $activeMenu
-    //     ]);
-    // }
-
-    // // Menyimpan perubahan data user
-    // public function update(Request $request, string $id)
-    // {
-    //     $request->validate([
-    //         // username harus diisi, berupa string, minimal 3 karakter,
-    //         // dan bernilai unik di tabel m_user kolom username kecuali untuk user dengan id yang sedang diedit
-    //         'username' => 'required|string|min:3|unique:m_user,username,' . $id . ',user_id',
-    //         'nama' => 'required|string|max:100', // nama harus diisi, berupa string, dan maksimal 100 karakter
-    //         'password' => 'nullable|min:5', // password bisa diisi (minimal 5 karakter) dan bisa tidak diisi
-    //         'level_id' => 'required|integer' // level_id harus diisi dan berupa angka
-    //     ]);
-
-    //     UserModel::find($id)->update([
-    //         'username' => $request->username,
-    //         'nama' => $request->nama,
-    //         'password' => $request->password ? bcrypt($request->password) : UserModel::find($id)->password,
-    //         'level_id' => $request->level_id
-    //     ]);
-
-    //     return redirect('/user')->with('success', 'Data user berhasil diubah');
-    // }
-
-    // // Menghapus data user
-    // public function destroy(string $id)
-    // {
-    //     $check = UserModel::find($id); // untuk mengecek apakah data user dengan id yang dimaksud ada atau tidak
-    //     if (!$check) {
-    //         return redirect('/user')->with('error', 'Data user tidak ditemukan');
-    //     }
-
-    //     try {
-    //         UserModel::destroy($id); // Hapus data level
-    //         return redirect('/user')->with('success', 'Data user berhasil dihapus');
-    //     } catch (\Illuminate\Database\QueryException $e) {
-    //         // Jika terjadi error ketika menghapus data, redirect kembali ke halaman dengan membawa pesan error
-    //         return redirect('/user')->with('error', 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
-    //     }
-    // }
+        try {
+            BarangModel::destroy($id); // Delete barang
+            return redirect('/barang')->with('success', 'Data barang berhasil dihapus');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return redirect('/barang')->with('error', 'Data barang gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
+        }
+    }
 }
