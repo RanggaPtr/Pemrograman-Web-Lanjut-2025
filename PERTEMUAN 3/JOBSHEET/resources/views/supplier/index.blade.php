@@ -5,26 +5,32 @@
     <div class="card-header">
         <h3 class="card-title">{{ $page->title }}</h3>
         <div class="card-tools">
+            <!-- Button to add a new supplier -->
             <a class="btn btn-sm btn-primary mt-1" href="{{ url('supplier/create') }}">Tambah</a>
         </div>
     </div>
     <div class="card-body">
+        <!-- Display success or error messages from the session -->
         @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+            <div class="alert alert-success">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+            <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
+        <!-- Filter Section -->
         <div class="row">
             <div class="col-md-12">
                 <div class="form-group row">
                     <label class="col-1 control-label col-form-label">Filter:</label>
                     <div class="col-3">
-                        <select class="form-control" id="level_id" name="level_id" required>
+                        <!-- Renamed 'level_id' to 'supplier_id' for consistency with the DataTables code -->
+                        <select class="form-control" id="supplier_id" name="supplier_id" required>
                             <option value="">- Semua -</option>
                             @foreach($level as $item)
-                            <option value="{{ $item->level_id }}">{{ $item->level_nama }}</option>
+                                <!-- 'level' now holds all supplier records (from your controller).
+                                     Replace level_id/level_nama with the actual supplier fields. -->
+                                <option value="{{ $item->supplier_id }}">{{ $item->supplier_nama }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -32,6 +38,7 @@
             </div>
         </div>
 
+        <!-- DataTable for Supplier -->
         <table class="table table-bordered table-striped table-hover table-sm" id="table_supplier">
             <thead>
                 <tr>
@@ -47,59 +54,63 @@
 </div>
 @endsection
 
+@push('css')
+@endpush
 
-        @push('css')
-        @endpush
+@push('js')
+<script>
+    $(document).ready(function() {
+        var dataSupplier = $('#table_supplier').DataTable({
+            // Enable server-side processing if your controller returns server-side data
+            serverSide: true,
+            ajax: {
+                url: "{{ url('supplier/list') }}",    // The route that returns JSON data
+                dataType: "json",
+                type: "POST",
+                data: function(d) {
+                    // Pass the selected supplier_id from the dropdown as a filter
+                    d.supplier_id = $('#supplier_id').val();
+                }
+            },
+            columns: [
+                {
+                    // Display the supplier_id field
+                    data: "supplier_id",
+                    className: "text-center",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    // Display the supplier_kode field
+                    data: "supplier_kode",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    // Display the supplier_nama field
+                    data: "supplier_nama",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    // Display the supplier_alamat field
+                    data: "supplier_alamat",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    // Display action buttons (Detail, Edit, Delete) returned by your controller
+                    data: "aksi",
+                    orderable: false,
+                    searchable: false
+                }
+            ]
+        });
 
-        @push('js')
-        <script>
-            $(document).ready(function() {
-                var dataSupplier = $('#table_supplier').DataTable({
-                    // serverSide: true, jika ingin menggunakan server side processing 
-                    serverSide: true,
-                    ajax: {
-                        "url": "{{ url('supplier/list') }}",
-                        "dataType": "json",
-                        "type": "POST",
-                        "data": function(d) {
-                            d.supplier_id = $('#supplier_id').val();
-                        }
-                    },
-                    columns: [{ // nomor urut dari laravel datatable addIndexColumn() 
-                        data: "DT_RowIndex",
-                        className: "text-center",
-                        orderable: false,
-                        searchable: false
-                    }, {
-                        data: "supplier_kode",
-                        className: "",
-                        // orderable: true, jika ingin kolom ini bisa diurutkan  
-                        orderable: true,
-                        // searchable: true, jika ingin kolom ini bisa dicari 
-                        searchable: true
-                    }, {
-                        data: "supplier_nama",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    }, {
-                        // mengambil data level hasil dari ORM berelasi 
-                        data: "supplier_alamat",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    }, {
-                        data: "aksi",
-                        className: "",
-                        orderable: false,
-                        searchable: false
-                    }]
-                });
-
-                $('#supplier_id').on('change', function() {
-                    dataSupplier.ajax.reload();
-                });
-
-            });
-        </script>
-        @endpush
+        // Reload DataTable whenever the dropdown changes
+        $('#supplier_id').on('change', function() {
+            dataSupplier.ajax.reload();
+        });
+    });
+</script>
+@endpush

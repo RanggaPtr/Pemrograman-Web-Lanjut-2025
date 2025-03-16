@@ -8,9 +8,9 @@ use Yajra\DataTables\Facades\DataTables;
 
 class SupplierController extends Controller
 {
+    // Display the list of suppliers
     public function index()
     {
-
         $breadcrumb = (object)[
             'title' => 'Daftar Supplier',
             'list' => ['Home', 'Supplier']
@@ -20,160 +20,195 @@ class SupplierController extends Controller
             'title' => 'Daftar Supplier yang terdaftar dalam sistem'
         ];
 
-        $activeMenu = 'supplier'; //set menu yang aktif
+        $activeMenu = 'supplier'; // Set active menu
 
-        $level=SupplierModel::all(); //ambil data level untuk filter level
+        // Retrieve all supplier records.
+        // Note: The variable is called $level because your view expects it,
+        // even though it represents suppliers.
+        $level = SupplierModel::all();
 
-        return view('supplier.index', ['breadcrumb' => $breadcrumb, 'page' => $page,'level'=>$level, 'activeMenu' => $activeMenu]);
+        return view('supplier.index', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'level' => $level,  // Passing supplier data as $level (per your view)
+            'activeMenu' => $activeMenu
+        ]);
     }
 
-    // Ambil data user dalam bentuk json untuk datatables
+    // Return supplier data in JSON format for DataTables
     public function list(Request $request)
     {
+        // Select fields from the supplier table
         $suppliers = SupplierModel::select('supplier_id', 'supplier_kode', 'supplier_nama', 'supplier_alamat');
-           
 
-        // filter data user bedasarkan level_id
-        if ($request->kategori_id) {
-            $suppliers->where('supplier_id',$request->kategori_id);
+        // Example filter: if a supplier_id is provided, filter the records.
+        if ($request->kategori_id) { // Note: This might be a filtering issue. If you intend to filter by supplier_id, use $request->supplier_id.
+            $suppliers->where('supplier_id', $request->kategori_id);
         }
 
         return DataTables::of($suppliers)
-            // menambahkan kolom index / no urut (default nama kolom: DT_RowIndex)
-            ->addIndexColumn()
-            ->addColumn('aksi', function ($supplier) {  // menambahkan kolom aksi
+            ->addIndexColumn() // Adds a sequential index column
+            ->addColumn('aksi', function ($supplier) {
+                // Create HTML for Detail, Edit, and Delete actions.
                 $btn  = '<a href="' . url('/supplier/' . $supplier->supplier_id) . '" class="btn btn-info btn-sm">Detail</a> ';
                 $btn .= '<a href="' . url('/supplier/' . $supplier->supplier_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
                 $btn .= '<form class="d-inline-block" method="POST" action="' . url('/supplier/' . $supplier->supplier_id) . '">'
-                    . csrf_field() . method_field('DELETE') .
-                    '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
+                    . csrf_field() . method_field('DELETE')
+                    . '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
                 return $btn;
             })
-            ->rawColumns(['aksi']) // memberitahu bahwa kolom aksi adalah html
+            ->rawColumns(['aksi']) // Inform DataTables that the 'aksi' column contains HTML
             ->make(true);
     }
 
-    // Menampilkan halaman form tambah user
+    // Show the form to create a new supplier
     public function create()
     {
-        $breadcrumb = (object) [
+        $breadcrumb = (object)[
             'title' => 'Tambah Supplier',
             'list' => ['Home', 'Supplier', 'Tambah']
         ];
 
-        $page = (object) [
+        $page = (object)[
             'title' => 'Tambah Supplier baru'
         ];
 
-        $level = SupplierModel::all(); // ambil data level untuk ditampilkan di form
-        $activeMenu = 'supplier'; // set menu yang aktif
+        // Fetch all supplier records (used in view as a dropdown if needed)
+        $level = SupplierModel::all();
+        $activeMenu = 'supplier';
 
-        return view('supplier.create', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
+        return view('supplier.create', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'level' => $level,
+            'activeMenu' => $activeMenu
+        ]);
     }
 
-    // Menyimpan data user baru
+    // Store a new supplier
     public function store(Request $request)
-    {
-        $request->validate([
-            // username harus diisi, berupa string, minimal 3 karakter, dan bernilai unik di tabel m_user kolom username
-            'supplier_id' => 'required|string|min:3',
-            'supplier_kode' => 'required|string|max:6', // nama harus diisi, berupa string, dan maksimal 100 karakter
-            'supplier_nama' => 'required|string|max:50', // nama harus diisi, berupa string, dan maksimal 100 karakter
-            'supplier_alamat' => 'required|string|max:100', // nama harus diisi, berupa string, dan maksimal 100 karakter
-        ]);
+{
+    // Validasi tanpa supplier_id
+    $request->validate([
+        'supplier_kode'   => 'required|string|max:6',
+        'supplier_nama'   => 'required|string|max:50',
+        'supplier_alamat' => 'required|string|max:100'
+    ]);
 
-        SupplierModel::create([
-            'supplier_id' => $request->kategori_id,
-            'supplier_kode' => $request->supplier_kode,
-            'level_nama' => $request->supplier_nama,
-            'level_alamat' => $request->supplier_nama
+    // Simpan data supplier tanpa mengirim supplier_id
+    SupplierModel::create([
+        'supplier_kode'   => $request->supplier_kode,
+        'supplier_nama'   => $request->supplier_nama,
+        'supplier_alamat' => $request->supplier_alamat
+    ]);
 
-        ]);
+    return redirect('/supplier')->with('success', 'Data supplier berhasil disimpan');
+}
 
-        return redirect('/supplier')->with('success', 'Data user berhasil disimpan');
-    }
 
-    // Menampilkan detail user
+    // Show details of a single supplier
     public function show(string $id)
     {
-        $user = SupplierModel::with('supplier')->find($id);
+        // Retrieve the supplier record by id.
+        $supplier = SupplierModel::find($id);
 
-        $breadcrumb = (object) [
-            'title' => 'Detail User',
-            'list' => ['Home', 'User', 'Detail']
+        if (!$supplier) {
+            return redirect('/supplier')->with('error', 'Data supplier tidak ditemukan');
+        }
+
+        $breadcrumb = (object)[
+            'title' => 'Detail Supplier',
+            'list' => ['Home', 'Supplier', 'Detail']
         ];
 
-        $page = (object) [
-            'title' => 'Detail user'
+        $page = (object)[
+            'title' => 'Detail Supplier'
         ];
 
-        $activeMenu = 'user'; // set menu yang sedang aktif
+        $activeMenu = 'supplier';
 
-        return view('user.show', ['breadcrumb' => $breadcrumb, 'page' => $page, 'user' => $user, 'activeMenu' => $activeMenu]);
+        return view('supplier.show', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'supplier' => $supplier,
+            'activeMenu' => $activeMenu
+        ]);
     }
 
-    // // Menampilkan halaman form edit user
-    // public function edit(string $id)
-    // {
-    //     $user = UserModel::find($id);
-    //     $level = LevelModel::all();
+    // Show the form to edit an existing supplier
+    public function edit(string $id)
+    {
+        // Find the supplier record by id.
+        $supplier = SupplierModel::find($id);
 
-    //     $breadcrumb = (object) [
-    //         'title' => 'Edit User',
-    //         'list' => ['Home', 'User', 'Edit']
-    //     ];
+        if (!$supplier) {
+            return redirect('/supplier')->with('error', 'Data supplier tidak ditemukan');
+        }
 
-    //     $page = (object) [
-    //         'title' => 'Edit user'
-    //     ];
+        // Retrieve all supplier records (if needed for a dropdown in the form)
+        $level = SupplierModel::all();
 
-    //     $activeMenu = 'user'; // set menu yang sedang aktif
+        $breadcrumb = (object)[
+            'title' => 'Edit Supplier',
+            'list' => ['Home', 'Supplier', 'Edit']
+        ];
 
-    //     return view('user.edit', [
-    //         'breadcrumb' => $breadcrumb,
-    //         'page' => $page,
-    //         'user' => $user,
-    //         'level' => $level,
-    //         'activeMenu' => $activeMenu
-    //     ]);
-    // }
+        $page = (object)[
+            'title' => 'Edit Supplier'
+        ];
 
-    // Menyimpan perubahan data user
-    // public function update(Request $request, string $id)
-    // {
-    //     $request->validate([
-    //         // username harus diisi, berupa string, minimal 3 karakter,
-    //         // dan bernilai unik di tabel m_user kolom username kecuali untuk user dengan id yang sedang diedit
-    //         'username' => 'required|string|min:3|unique:m_user,username,' . $id . ',user_id',
-    //         'nama' => 'required|string|max:100', // nama harus diisi, berupa string, dan maksimal 100 karakter
-    //         'password' => 'nullable|min:5', // password bisa diisi (minimal 5 karakter) dan bisa tidak diisi
-    //         'level_id' => 'required|integer' // level_id harus diisi dan berupa angka
-    //     ]);
+        $activeMenu = 'supplier';
 
-    //     UserModel::find($id)->update([
-    //         'username' => $request->username,
-    //         'nama' => $request->nama,
-    //         'password' => $request->password ? bcrypt($request->password) : UserModel::find($id)->password,
-    //         'level_id' => $request->level_id
-    //     ]);
+        // Return the 'supplier.edit' view with the current supplier data.
+        return view('supplier.edit', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'supplier' => $supplier,
+            'level' => $level,
+            'activeMenu' => $activeMenu
+        ]);
+    }
 
-    //     return redirect('/user')->with('success', 'Data user berhasil diubah');
-    // }
+    // Update an existing supplier
+    public function update(Request $request, string $id)
+{
+    // Validasi tanpa supplier_id
+    $request->validate([
+        'supplier_kode'   => 'required|string|max:6|unique:m_supplier,supplier_kode,' . $id . ',supplier_id',
+        'supplier_nama'   => 'required|string|max:50',
+        'supplier_alamat' => 'required|string|max:100'
+    ]);
 
-    // // Menghapus data user
-    // public function destroy(string $id)
-    // {
-    //     $check = UserModel::find($id); // untuk mengecek apakah data user dengan id yang dimaksud ada atau tidak
-    //     if (!$check) {
-    //         return redirect('/user')->with('error', 'Data user tidak ditemukan');
-    //     }
+    $supplier = SupplierModel::find($id);
+    if (!$supplier) {
+        return redirect('/supplier')->with('error', 'Data supplier tidak ditemukan');
+    }
 
-    //     try {
-    //         UserModel::destroy($id); // Hapus data level
-    //         return redirect('/user')->with('success', 'Data user berhasil dihapus');
-    //     } catch (\Illuminate\Database\QueryException $e) {
-    //         // Jika terjadi error ketika menghapus data, redirect kembali ke halaman dengan membawa pesan error
-    //         return redirect('/user')->with('error', 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
-    //     }
-    // }
+    // Update data tanpa mengirim supplier_id
+    $supplier->update([
+        'supplier_kode'   => $request->supplier_kode,
+        'supplier_nama'   => $request->supplier_nama,
+        'supplier_alamat' => $request->supplier_alamat
+    ]);
+
+    return redirect('/supplier')->with('success', 'Data supplier berhasil diubah');
+}
+
+    
+
+    // Delete a supplier
+    public function destroy(string $id)
+    {
+        $supplier = SupplierModel::find($id);
+        if (!$supplier) {
+            return redirect('/supplier')->with('error', 'Data supplier tidak ditemukan');
+        }
+
+        try {
+            SupplierModel::destroy($id);
+            return redirect('/supplier')->with('success', 'Data supplier berhasil dihapus');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return redirect('/supplier')->with('error', 'Data supplier gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
+        }
+    }
 }

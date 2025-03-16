@@ -9,10 +9,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SupplierModel extends Model
 {
     use HasFactory;
+    
     protected $table = 'm_supplier';
     protected $primaryKey = 'supplier_id';
 
-    // Relasi ke User (jika ada relasi dengan User)
+    // Add a fillable array to allow mass assignment on these fields.
+    protected $fillable = [
+        'supplier_kode',
+        'supplier_nama',
+        'supplier_alamat',
+    ];
+
+    // Example relationship (if you need one)
     public function user(): HasMany
     {
         return $this->hasMany(SupplierModel::class, 'supplier_id', 'supplier_id');

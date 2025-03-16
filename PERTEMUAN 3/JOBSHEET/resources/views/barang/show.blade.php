@@ -8,37 +8,38 @@
     </div>
     <div class="card-body">
         @empty($barang)
-        <div class="alert alert-danger alert-dismissible">
-            <h5><i class="icon fas fa-ban"></i> Kesalahan!</h5>
-            Data yang Anda cari tidak ditemukan.
-        </div>
+            <div class="alert alert-danger alert-dismissible">
+                <h5><i class="icon fas fa-ban"></i> Kesalahan!</h5>
+                Data yang Anda cari tidak ditemukan.
+            </div>
+            <a href="{{ url('barang') }}" class="btn btn-sm btn-default mt-2">Kembali</a>
         @else
-        <table class="table table-bordered table-striped table-hover table-sm">
-            <tr>
-                <th>Barang ID</th>
-                <td>{{ $barang->barang_id }}</td>
-            </tr>
-            <tr>
-                <th>Kategori</th>
-                <td>{{ $barang->kategori ? $barang->kategori->kategori_nama : 'Tidak Ada Kategori' }}</td>
-            </tr>
-            <tr>
-                <th>Barang Kode</th>
-                <td>{{ $barang->barang_kode }}</td>
-            </tr>
-            <tr>
-                <th>Barang Nama</th>
-                <td>{{ $barang->barang_nama }}</td>
-            </tr>
-            <tr>
-                <th>Harga Beli</th>
-                <td>{{ $barang->harga_beli }}</td>
-            </tr>
-            <tr>
-                <th>Harga Jual</th>
-                <td>{{ $barang->harga_jual }}</td>
-            </tr>
-        </table>
+            <table class="table table-bordered table-striped table-hover table-sm">
+                <tr>
+                    <th>Barang ID</th>
+                    <td>{{ $barang->barang_id }}</td>
+                </tr>
+                <tr>
+                    <th>Kategori</th>
+                    <td>{{ $barang->kategori ? $barang->kategori->kategori_nama : 'Tidak Ada Kategori' }}</td>
+                </tr>
+                <tr>
+                    <th>Barang Kode</th>
+                    <td>{{ $barang->barang_kode }}</td>
+                </tr>
+                <tr>
+                    <th>Barang Nama</th>
+                    <td>{{ $barang->barang_nama }}</td>
+                </tr>
+                <tr>
+                    <th>Harga Beli</th>
+                    <td>{{ $barang->harga_beli }}</td>
+                </tr>
+                <tr>
+                    <th>Harga Jual</th>
+                    <td>{{ $barang->harga_jual }}</td>
+                </tr>
+            </table>
         @endempty
         <a href="{{ url('barang') }}" class="btn btn-sm btn-default mt-2">Kembali</a>
     </div>

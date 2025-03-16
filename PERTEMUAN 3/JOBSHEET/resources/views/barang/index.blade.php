@@ -10,12 +10,13 @@
     </div>
     <div class="card-body">
         @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+            <div class="alert alert-success">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+            <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
+        <!-- Filter Section -->
         <div class="row">
             <div class="col-md-12">
                 <div class="form-group row">
@@ -23,8 +24,8 @@
                     <div class="col-3">
                         <select class="form-control" id="kategori_id" name="kategori_id" required>
                             <option value="">- Semua -</option>
-                            @foreach($kategori as $item)  <!-- Corrected from $kategroi to $kategori -->
-                            <option value="{{ $item->kategori_id }}">{{ $item->kategori_nama }}</option>
+                            @foreach($kategori as $item)
+                                <option value="{{ $item->kategori_id }}">{{ $item->kategori_nama }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -32,6 +33,7 @@
             </div>
         </div>
 
+        <!-- DataTable for Barang -->
         <table class="table table-bordered table-striped table-hover table-sm" id="table_barang">
             <thead>
                 <tr>
@@ -62,16 +64,19 @@
                 dataType: "json",
                 type: "POST",
                 data: function(d) {
-                    d.kategori_id = $('#kategori_id').val();  // Correct the filter usage here
+                    // Send the selected kategori_id as filter data
+                    d.kategori_id = $('#kategori_id').val();
                 }
             },
-            columns: [{
+            columns: [
+                {
                     data: "DT_RowIndex",
                     className: "text-center",
                     orderable: false,
                     searchable: false
                 },
                 {
+                    // Access the related kategori's id via eager loading
                     data: "kategori.kategori_id",
                     className: "",
                     orderable: true,
@@ -110,7 +115,7 @@
             ]
         });
 
-        // Reload DataTable when filter is changed
+        // Reload DataTable when the kategori filter changes
         $('#kategori_id').on('change', function() {
             dataBarang.ajax.reload();
         });
