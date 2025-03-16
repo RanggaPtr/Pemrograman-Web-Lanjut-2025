@@ -21,10 +21,10 @@
                 <div class="form-group row">
                     <label class="col-1 control-label col-form-label">Filter:</label>
                     <div class="col-3">
-                        <select class="form-control" id="level_id" name="barang_id" required>
+                        <select class="form-control" id="kategori_id" name="kategori_id" required>
                             <option value="">- Semua -</option>
-                            @foreach($level as $item)
-                            <option value="{{ $item->barang_id }}">{{ $item->barang_nama }}</option>
+                            @foreach($kategori as $item)  <!-- Corrected from $kategroi to $kategori -->
+                            <option value="{{ $item->kategori_id }}">{{ $item->kategori_nama }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -49,68 +49,71 @@
 </div>
 @endsection
 
+@push('css')
+@endpush
 
-        @push('css')
-        @endpush
+@push('js')
+<script>
+    $(document).ready(function() {
+        var dataBarang = $('#table_barang').DataTable({
+            serverSide: true,
+            ajax: {
+                url: "{{ url('barang/list') }}",
+                dataType: "json",
+                type: "POST",
+                data: function(d) {
+                    d.kategori_id = $('#kategori_id').val();  // Correct the filter usage here
+                }
+            },
+            columns: [{
+                    data: "DT_RowIndex",
+                    className: "text-center",
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: "kategori.kategori_id",
+                    className: "",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "barang_kode",
+                    className: "",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "barang_nama",
+                    className: "",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "harga_beli",
+                    className: "",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "harga_jual",
+                    className: "",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "aksi",
+                    className: "",
+                    orderable: false,
+                    searchable: false
+                }
+            ]
+        });
 
-        @push('js')
-        <script>
-            $(document).ready(function() {
-                var dataUser = $('#table_barang').DataTable({
-                    // serverSide: true, jika ingin menggunakan server side processing 
-                    serverSide: true,
-                    ajax: {
-                        "url": "{{ url('barang/list') }}",
-                        "dataType": "json",
-                        "type": "POST",
-                        "data": function(d) {
-                            d.barang_id = $('#barang_id').val();
-                        }
-                    },
-                    columns: [{ // nomor urut dari laravel datatable addIndexColumn() 
-                        data: "DT_RowIndex",
-                        className: "text-center",
-                        orderable: false,
-                        searchable: false
-                    }, {
-                        data: "kategori.kategori_id",
-                        className: "",
-                        // orderable: true, jika ingin kolom ini bisa diurutkan  
-                        orderable: true,
-                        // searchable: true, jika ingin kolom ini bisa dicari 
-                        searchable: true
-                    }, {
-                        data: "barang_kode",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    },{
-                        data: "barang_nama",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    }, {
-                        data: "harga_beli",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    },{
-                        data: "harga_jual",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    },{
-                        data: "aksi",
-                        className: "",
-                        orderable: false,
-                        searchable: false
-                    }]
-                });
-
-                $('barang_id').on('change', function() {
-                    dataUser.ajax.reload();
-                });
-
-            });
-        </script>
-        @endpush
+        // Reload DataTable when filter is changed
+        $('#kategori_id').on('change', function() {
+            dataBarang.ajax.reload();
+        });
+    });
+</script>
+@endpush

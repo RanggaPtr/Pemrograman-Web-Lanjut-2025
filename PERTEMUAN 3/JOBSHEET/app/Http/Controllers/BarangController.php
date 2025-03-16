@@ -9,55 +9,35 @@ use Yajra\DataTables\Facades\DataTables;
 
 class BarangController extends Controller
 {
-     // Display the list of categories (kategori)
-     public function index()
-     {
-         $breadcrumb = (object)[
-             'title' => 'Daftar Kategori',
-             'list' => ['Home', 'Kategori']
-         ];
- 
-         $page = (object)[
-             'title' => 'Daftar Kategori yang terdaftar dalam sistem'
-         ];
- 
-         $activeMenu = 'kategori'; // Set active menu
- 
-         $kategori = KategoriModel::all(); // Fetch all categories (kategori)
- 
-         return view('kategori.index', [
-             'breadcrumb' => $breadcrumb,
-             'page' => $page,
-             'kategori' => $kategori,  // Pass the kategori data to the view
-             'activeMenu' => $activeMenu
-         ]);
-     }
- 
-     // Fetch the data for DataTables
-     public function list(Request $request)
-     {
-         $kategoriQuery = KategoriModel::select('kategori_id', 'kategori_kode', 'kategori_nama');
- 
-         // Filter based on kategori_kode if passed in the request
-         if ($request->kategori_kode) {
-             $kategoriQuery->where('kategori_kode', $request->kategori_kode);
-         }
- 
-         return DataTables::of($kategoriQuery)
-             ->addIndexColumn()  // Add index column
-             ->addColumn('aksi', function ($kategori) {
-                 $btn  = '<a href="' . url('/kategori/' . $kategori->kategori_id) . '" class="btn btn-info btn-sm">Detail</a> ';
-                 $btn .= '<a href="' . url('/kategori/' . $kategori->kategori_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
-                 $btn .= '<form class="d-inline-block" method="POST" action="' . url('/kategori/' . $kategori->kategori_id) . '">'
-                     . csrf_field() . method_field('DELETE') . 
-                     '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
-                 return $btn;
-             })
-             ->rawColumns(['aksi'])
-             ->make(true);
-     }
+    // Display the list of barang
+    public function index()
+    {
+        $breadcrumb = (object)[
+            'title' => 'Daftar Barang',
+            'list' => ['Home', 'Barang']
+        ];
 
-    // Show the form to create a new barang (product)
+        $page = (object)[
+            'title' => 'Daftar Barang yang terdaftar dalam sistem'
+        ];
+
+        $activeMenu = 'barang'; // Set active menu
+
+        // Fetch all categories and pass them to the view
+        $kategori = KategoriModel::all(); // Correct this, you need to fetch categories
+
+        // Fetch all barang (products)
+        $barang = BarangModel::all();
+
+        return view('barang.index', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'barang' => $barang,  // Corrected variable name: 'barang' not 'kategori'
+            'kategori' => $kategori,  // Pass kategori data
+            'activeMenu' => $activeMenu
+        ]);
+    }
+
     public function create()
     {
         $breadcrumb = (object) [
@@ -69,19 +49,48 @@ class BarangController extends Controller
             'title' => 'Tambah Barang Baru'
         ];
 
-        $kategori = KategoriModel::all(); // Get all categories
+        // Fetch categories for the dropdown
+        $kategori = KategoriModel::all();
 
         $activeMenu = 'barang'; // Set active menu
 
+        // Return the 'barang.create' view
         return view('barang.create', [
             'breadcrumb' => $breadcrumb,
             'page' => $page,
-            'kategori' => $kategori, // Pass the kategori data to the view
+            'kategori' => $kategori,
             'activeMenu' => $activeMenu
         ]);
     }
 
-    // Store a new barang (product)
+    // Fetch the data for DataTables
+    public function list(Request $request)
+    {
+        // Eager-load 'kategori' so that kategori.kategori_id or kategori.kategori_kode is available in JSON
+        $barangQuery = BarangModel::with('kategori')
+            ->select('barang_id', 'barang_kode', 'barang_nama', 'harga_beli', 'harga_jual', 'kategori_id');
+
+        // Optional filter by 'barang_kode' if needed
+        if ($request->barang_kode) {
+            $barangQuery->where('barang_kode', $request->barang_kode);
+        }
+
+        return DataTables::of($barangQuery)
+            ->addIndexColumn()
+            ->addColumn('aksi', function ($barang) {
+                $btn  = '<a href="' . url('/barang/' . $barang->barang_id) . '" class="btn btn-info btn-sm">Detail</a> ';
+                $btn .= '<a href="' . url('/barang/' . $barang->barang_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
+                $btn .= '<form class="d-inline-block" method="POST" action="' . url('/barang/' . $barang->barang_id) . '">'
+                    . csrf_field() . method_field('DELETE') .
+                    '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
+                return $btn;
+            })
+            ->rawColumns(['aksi'])
+            ->make(true);
+    }
+
+
+    // Store a new barang
     public function store(Request $request)
     {
         $request->validate([
@@ -103,7 +112,7 @@ class BarangController extends Controller
         return redirect('/barang')->with('success', 'Data barang berhasil disimpan');
     }
 
-    // Show the details of a barang (product)
+    // Show the details of a barang
     public function show(string $id)
     {
         $barang = BarangModel::find($id);
@@ -131,38 +140,43 @@ class BarangController extends Controller
         ]);
     }
 
-    // Show the form to edit a barang (product)
+    // Show the form to edit a barang
     public function edit(string $id)
-    {
-        $barangData = BarangModel::find($id);
+{
+    // Find the barang by its id
+    $barang = BarangModel::find($id);
 
-        if (!$barangData) {
-            return redirect('/barang')->with('error', 'Data barang tidak ditemukan');
-        }
-
-        $kategori = KategoriModel::all(); // Get all categories
-
-        $breadcrumb = (object) [
-            'title' => 'Edit Barang',
-            'list' => ['Home', 'Barang', 'Edit']
-        ];
-
-        $page = (object) [
-            'title' => 'Edit Barang'
-        ];
-
-        $activeMenu = 'barang'; // Set active menu
-
-        return view('barang.edit', [
-            'breadcrumb' => $breadcrumb,
-            'page' => $page,
-            'barangData' => $barangData, // Pass the current barang data to the view
-            'kategori' => $kategori, // Pass the categories to the view
-            'activeMenu' => $activeMenu
-        ]);
+    // If not found, redirect with an error message
+    if (!$barang) {
+        return redirect('/barang')->with('error', 'Data barang tidak ditemukan');
     }
 
-    // Update the barang (product) data
+    // Fetch all categories for the dropdown
+    $kategori = KategoriModel::all();
+
+    $breadcrumb = (object)[
+        'title' => 'Edit Barang',
+        'list' => ['Home', 'Barang', 'Edit']
+    ];
+
+    $page = (object)[
+        'title' => 'Edit Barang'
+    ];
+
+    $activeMenu = 'barang';
+
+    // Pass the found barang as $barang (not $barangData) to keep it consistent
+    return view('barang.edit', [
+        'breadcrumb' => $breadcrumb,
+        'page' => $page,
+        'barang' => $barang,
+        'kategori' => $kategori,
+        'activeMenu' => $activeMenu
+    ]);
+}
+
+
+    // Update the barang data
     public function update(Request $request, string $id)
     {
         $request->validate([
@@ -184,7 +198,7 @@ class BarangController extends Controller
         return redirect('/barang')->with('success', 'Data barang berhasil diubah');
     }
 
-    // Delete a barang (product)
+    // Delete a barang
     public function destroy(string $id)
     {
         $check = BarangModel::find($id);
