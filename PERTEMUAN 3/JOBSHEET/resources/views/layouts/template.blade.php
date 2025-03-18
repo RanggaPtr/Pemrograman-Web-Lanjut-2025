@@ -15,9 +15,13 @@
     <link rel="stylesheet" href="{{ asset('Adminlte/plugins/fontawesome-free/css/all.min.css')}}">
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('Adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css')}}">
-    <link rel="stylesheet"
-        href="{{ asset('Adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css')}}">
+    <link rel="stylesheet" href="{{ asset('Adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css')}}">
     <link rel="stylesheet" href="{{ asset('Adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css')}}">
+    <!-- jquery-validation -->
+    <link rel="stylesheet" href="{{ asset('Adminlte/plugins/jquery-validation/jquery.validate.min.js')}}">
+    <link rel="stylesheet" href="{{ asset('Adminlte/plugins/jquery-validation/additional-methods.min.js')}}">
+    <!-- SweetAlert2 -->
+     <link rel="stylesheet" href="{{ asset('Adminlte/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css')}}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ asset('Adminlte/dist/css/adminlte.min.css')}}">
 

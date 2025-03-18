@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
+use Dotenv\Validator;
 use Illuminate\Http\Request;
 use App\Models\UserModel;
 use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\Validator as FacadesValidator;
+
 
 class UserController extends Controller
 {
@@ -41,9 +44,9 @@ class UserController extends Controller
 
         $activeMenu = 'user'; //set menu yang aktif
 
-        $level=LevelModel::all(); //ambil data level untuk filter level
+        $level = LevelModel::all(); //ambil data level untuk filter level
 
-        return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page,'level'=>$level, 'activeMenu' => $activeMenu]);
+        return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
     }
 
     // Ambil data user dalam bentuk json untuk datatables
@@ -54,7 +57,7 @@ class UserController extends Controller
 
         // filter data user bedasarkan level_id
         if ($request->level_id) {
-            $users->where('level_id',$request->level_id);
+            $users->where('level_id', $request->level_id);
         }
 
         return DataTables::of($users)
@@ -193,5 +196,55 @@ class UserController extends Controller
             // Jika terjadi error ketika menghapus data, redirect kembali ke halaman dengan membawa pesan error
             return redirect('/user')->with('error', 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
         }
+    }
+
+    // public function create_ajax()
+    // {
+    //     $level = LevelModel::select('level_id', 'level_nama')->get();
+
+    //     return view('user.create_ajax')
+    //         ->with('level', $level);
+    // }
+
+    public function create_ajax()
+    {
+        if (request()->ajax()) {
+            $level = LevelModel::select('level_id', 'level_nama')->get();
+            return view('user.create_ajax')->with('level', $level);
+        }
+        return redirect('/');
+    }
+
+    public function ajax(Request $request)
+    {
+        // cek apakah request berupa ajax
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'level_id' => 'required|integer',
+                'username' => 'required|string|min:3|max:20|unique:m_user',
+                'nama' => 'required|string|min:3|max:100',
+                'password' => 'required|string|min:6|max:20'
+            ];
+
+            // use iluminate/support/Facades/Validator
+            $validator = FacadesValidator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                return response(
+                    [
+                        'status' => false,
+                        'message' => 'Validasi Gagal',
+                        'msgField' => $validator->errors()
+                    ]
+                );
+            }
+
+            UserModel::create($request->all());
+            return response()->json([
+                'status' => true,
+                'message' => 'Data user berhasil disimpan'
+            ]);
+        }
+        redirect('/');
     }
 }
