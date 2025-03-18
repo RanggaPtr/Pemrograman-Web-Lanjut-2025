@@ -44,6 +44,9 @@ Route::group(['prefix'=>'user'],function(){
 
     Route::get('{id}/edit_ajax', [UserController::class, 'edit_ajax']);
     Route::put('{id}/update_ajax', [UserController::class, 'update_ajax']);
+
+    Route::get('{id}/delete_ajax', [UserController::class, 'delete_ajax']);
+    Route::delete('{id}/delete_ajax', [UserController::class, 'destroy_ajax']);
 });
 
 Route::group(['prefix'=>'level'],function(){
