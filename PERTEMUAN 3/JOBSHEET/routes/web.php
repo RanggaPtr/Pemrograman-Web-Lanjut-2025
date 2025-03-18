@@ -41,6 +41,9 @@ Route::group(['prefix'=>'user'],function(){
 
     Route::get('/create_ajax', [UserController::class, 'create_ajax']);
     Route::post('/store_ajax', [UserController::class, 'store_ajax']);
+
+    Route::get('{id}/edit_ajax', [UserController::class, 'edit_ajax']);
+    Route::put('{id}/update_ajax', [UserController::class, 'update_ajax']);
 });
 
 Route::group(['prefix'=>'level'],function(){
