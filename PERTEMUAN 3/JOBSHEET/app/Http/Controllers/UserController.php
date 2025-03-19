@@ -89,7 +89,7 @@ class UserController extends Controller
             ->addIndexColumn()  // Menambahkan kolom index / no urut (default nama kolom: DT_RowIndex)  
             ->addColumn('aksi', function ($user) {
                 // Menambahkan kolom aksi
-                $btn  = '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                $btn  = '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
 
@@ -258,7 +258,7 @@ class UserController extends Controller
                 return response(
                     [
                         'status' => false,
-                        'message' => 'Validasi Gagal',
+                        'message' => 'Store Gagal',
                         'msgField' => $validator->errors()
                     ]
                 );
@@ -297,7 +297,7 @@ class UserController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status'   => false,    // respon json, true: berhasil, false: gagal 
-                    'message'  => 'Validasi gagal.',
+                    'message'  => 'Edit gagal.',
                     'msgField' => $validator->errors()  // menunjukkan field mana yang error 
                 ]);
             }
@@ -329,25 +329,45 @@ class UserController extends Controller
         return view('user.confirm_ajax', ['user' => $user]);
     }
 
+    // public function delete_ajax(Request $request, $id)
+    // {
+    //     if ($request->ajax() || $request->wantsJson()) {
+
+    //         $user = UserModel::find($id);
+
+    //         if ($user) {
+    //             $user->delete();
+    //             return response()->json([
+    //                 'status'  => true,
+    //                 'message' => 'Data berhasil dihapus'
+    //             ]);
+    //         } else {
+    //             return response()->json([
+    //                 'status'  => false,
+    //                 'message' => 'Data tidak ditemukan'
+    //             ]);
+    //         }
+    //     }
+    //     return redirect('/');
+    // }
+
+    // public function delete_ajax menggunakan try catch
     public function delete_ajax(Request $request, $id)
     {
-        if ($request->ajax() || $request->wantsJson()) {
-
+        try {
             $user = UserModel::find($id);
-
-            if ($user) {
-                $user->delete();
-                return response()->json([
-                    'status'  => true,
-                    'message' => 'Data berhasil dihapus'
-                ]);
-            } else {
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'Data tidak ditemukan'
-                ]);
-            }
+            $user->delete();
+            return response()->json([
+                'status'  => true,
+                'message' => 'Data berhasil dihapus'
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
+            ]);
         }
-        return redirect('/');
     }
+
+
 }
