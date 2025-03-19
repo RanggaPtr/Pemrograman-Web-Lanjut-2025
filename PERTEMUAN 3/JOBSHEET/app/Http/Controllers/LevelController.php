@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Yajra\DataTables\Facades\DataTables;
 
 class LevelController extends Controller
@@ -30,7 +31,7 @@ class LevelController extends Controller
     public function list(Request $request)
     {
         $levels = LevelModel::select('level_id', 'level_kode', 'level_nama');
-        
+
         // Filter berdasarkan level_kode (bukan level_id)
         if ($request->level_kode) {
             $levels->where('level_kode', $request->level_kode);
@@ -40,7 +41,7 @@ class LevelController extends Controller
             ->addIndexColumn() // Menambahkan kolom index
             ->addColumn('aksi', function ($level) {
                 $btn  = '<a href="' . url('/level/' . $level->level_id) . '" class="btn btn-info btn-sm">Detail</a> ';
-                $btn .= '<a href="' . url('/level/' . $level->level_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
+                $btn .= '<a href="' . url('/level/' . $level->level_id . '/edit_ajax') . '" class="btn btn-warning btn-sm">Edit</a> ';
                 $btn .= '<form class="d-inline-block" method="POST" action="' . url('/level/' . $level->level_id) . '">'
                     . csrf_field() . method_field('DELETE') .
                     '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
@@ -158,6 +159,144 @@ class LevelController extends Controller
             return redirect('/level')->with('success', 'Data level berhasil dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect('/level')->with('error', 'Data level gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini');
+        }
+    }
+
+    public function create_ajax()
+    {
+        // if (request()->ajax()) {
+        $level = LevelModel::select('level_id', 'level_nama')->get();
+        return view('user.create_ajax', ['level' => $level]);
+        // }
+        // return redirect('/');
+    }
+
+    public function store_ajax(Request $request)
+    {
+        // cek apakah request berupa ajax
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'level_id' => 'required|integer',
+                'username' => 'required|string|min:3|max:20|unique:m_user',
+                'nama' => 'required|string|min:3|max:100',
+                'password' => 'required|string|min:6|max:20'
+            ];
+
+            // use iluminate/support/Facades/Validator
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                return response(
+                    [
+                        'status' => false,
+                        'message' => 'Store Gagal',
+                        'msgField' => $validator->errors()
+                    ]
+                );
+            }
+
+            LevelModel::create($request->all());
+            return response()->json([
+                'status' => true,
+                'message' => 'Data user berhasil disimpan'
+            ]);
+        }
+        redirect('/');
+    }
+
+    public function edit_ajax(string $id)
+    {
+        $user = UserModel::find($id);
+        $level = LevelModel::select('level_id', 'level_nama')->get();
+        return view('user.edit_ajax', ['user' => $user, 'level' => $level]);
+    }
+
+    public function update_ajax(Request $request, $id)
+    {
+        // cek apakah request dari ajax 
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'level_id' => 'required|integer',
+                'username' => 'required|max:20|unique:m_user,username,' . $id . ',user_id',
+                'nama'     => 'required|max:100',
+                'password' => 'nullable|min:6|max:20'
+            ];
+
+            // use Illuminate\Support\Facades\Validator; 
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'   => false,    // respon json, true: berhasil, false: gagal 
+                    'message'  => 'Edit gagal.',
+                    'msgField' => $validator->errors()  // menunjukkan field mana yang error 
+                ]);
+            }
+
+            $check = UserModel::find($id);
+            if ($check) {
+                if (!$request->filled('password')) { // jika password tidak diisi, maka hapus dari request 
+                    $request->request->remove('password');
+                }
+
+                $check->update($request->all());
+                return response()->json([
+                    'status'  => true,
+                    'message' => 'Data berhasil diupdate'
+                ]);
+            } else {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+        }
+        return redirect('/');
+    }
+
+    public function confirm_ajax(string $id)
+    {
+        $user = UserModel::find($id);
+        return view('user.confirm_ajax', ['user' => $user]);
+    }
+
+    // public function delete_ajax(Request $request, $id)
+    // {
+    //     if ($request->ajax() || $request->wantsJson()) {
+
+    //         $user = UserModel::find($id);
+
+    //         if ($user) {
+    //             $user->delete();
+    //             return response()->json([
+    //                 'status'  => true,
+    //                 'message' => 'Data berhasil dihapus'
+    //             ]);
+    //         } else {
+    //             return response()->json([
+    //                 'status'  => false,
+    //                 'message' => 'Data tidak ditemukan'
+    //             ]);
+    //         }
+    //     }
+    //     return redirect('/');
+    // }
+
+    // public function delete_ajax menggunakan try catch
+    public function delete_ajax(Request $request, $id)
+    {
+        try {
+            $user = UserModel::find($id);
+            $user->delete();
+            return response()->json([
+                'status'  => true,
+                'message' => 'Data berhasil dihapus'
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
+            ]);
         }
     }
 }
