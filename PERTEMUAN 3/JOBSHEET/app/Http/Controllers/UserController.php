@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
-use Dotenv\Validator;
 use Illuminate\Http\Request;
 use App\Models\UserModel;
 use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
-use Illuminate\Support\Facades\Validator as FacadesValidator;
+use Illuminate\Support\Facades\Validator;
 use Monolog\Level;
 
 class UserController extends Controller
@@ -236,12 +235,12 @@ class UserController extends Controller
     {
         if (request()->ajax()) {
             $level = LevelModel::select('level_id', 'level_nama')->get();
-            return view('user.create_ajax')->with('level', $level);
+            return view('user.create_ajax',['level'=>$level]);
         }
         return redirect('/');
     }
 
-    public function ajax(Request $request)
+    public function store_ajax(Request $request)
     {
         // cek apakah request berupa ajax
         if ($request->ajax() || $request->wantsJson()) {
@@ -253,7 +252,7 @@ class UserController extends Controller
             ];
 
             // use iluminate/support/Facades/Validator
-            $validator = FacadesValidator::make($request->all(), $rules);
+            $validator =Validator::make($request->all(), $rules);
 
             if ($validator->fails()) {
                 return response(
@@ -333,7 +332,7 @@ class UserController extends Controller
     public function delete_ajax(Request $request, $id)
     {
         if ($request->ajax() || $request->wantsJson()) {
-            
+
             $user = UserModel::find($id);
 
             if ($user) {
