@@ -233,11 +233,11 @@ class UserController extends Controller
 
     public function create_ajax()
     {
-        if (request()->ajax()) {
+        // if (request()->ajax()) {
             $level = LevelModel::select('level_id', 'level_nama')->get();
             return view('user.create_ajax',['level'=>$level]);
-        }
-        return redirect('/');
+        // }
+        // return redirect('/');
     }
 
     public function store_ajax(Request $request)
@@ -292,7 +292,7 @@ class UserController extends Controller
             ];
 
             // use Illuminate\Support\Facades\Validator; 
-            $validator = FacadesValidator::make($request->all(), $rules);
+            $validator = Validator::make($request->all(), $rules);
 
             if ($validator->fails()) {
                 return response()->json([
