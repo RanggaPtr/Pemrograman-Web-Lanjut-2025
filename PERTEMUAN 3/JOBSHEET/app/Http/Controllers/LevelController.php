@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LevelModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Monolog\Level;
 use Yajra\DataTables\Facades\DataTables;
 
 class LevelController extends Controller
@@ -165,8 +166,8 @@ class LevelController extends Controller
     public function create_ajax()
     {
         // if (request()->ajax()) {
-        $level = LevelModel::select('level_id', 'level_nama')->get();
-        return view('user.create_ajax', ['level' => $level]);
+        $level = LevelModel::select('level_id', 'level_kode', 'level_nama')->get();
+        return view('level.create_ajax', ['level' => $level]);
         // }
         // return redirect('/');
     }
@@ -176,10 +177,8 @@ class LevelController extends Controller
         // cek apakah request berupa ajax
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-                'level_id' => 'required|integer',
-                'username' => 'required|string|min:3|max:20|unique:m_user',
-                'nama' => 'required|string|min:3|max:100',
-                'password' => 'required|string|min:6|max:20'
+                'level_kode' => 'required|string|min:3|unique:m_level,level_kode', // Unique constraint for level code
+                'level_nama' => 'required|string|max:20', // Level name validation
             ];
 
             // use iluminate/support/Facades/Validator
@@ -189,7 +188,7 @@ class LevelController extends Controller
                 return response(
                     [
                         'status' => false,
-                        'message' => 'Store Gagal',
+                        'message' => 'Pembuatan Level Gagal',
                         'msgField' => $validator->errors()
                     ]
                 );
@@ -206,9 +205,9 @@ class LevelController extends Controller
 
     public function edit_ajax(string $id)
     {
-        $user = UserModel::find($id);
-        $level = LevelModel::select('level_id', 'level_nama')->get();
-        return view('user.edit_ajax', ['user' => $user, 'level' => $level]);
+        $level = LevelModel::find($id);
+        // $level = LevelModel::select('level_id', 'level_nama')->get();
+        return view('level.edit_ajax', ['level' => $level]);
     }
 
     public function update_ajax(Request $request, $id)
@@ -216,10 +215,8 @@ class LevelController extends Controller
         // cek apakah request dari ajax 
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-                'level_id' => 'required|integer',
-                'username' => 'required|max:20|unique:m_user,username,' . $id . ',user_id',
-                'nama'     => 'required|max:100',
-                'password' => 'nullable|min:6|max:20'
+                'level_kode' => 'required|string|min:3|unique:m_level,level_kode,' . $id . ',level_id', // Exclude current level from uniqueness check
+                'level_nama' => 'required|string|max:20',
             ];
 
             // use Illuminate\Support\Facades\Validator; 
@@ -233,31 +230,27 @@ class LevelController extends Controller
                 ]);
             }
 
-            $check = UserModel::find($id);
-            if ($check) {
-                if (!$request->filled('password')) { // jika password tidak diisi, maka hapus dari request 
-                    $request->request->remove('password');
-                }
-
-                $check->update($request->all());
+            $level = LevelModel::find($id); // Find the level to update
+            if ($level) {
+                $level->update($request->all()); // Update the level with new data
                 return response()->json([
-                    'status'  => true,
-                    'message' => 'Data berhasil diupdate'
-                ]);
-            } else {
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'Data tidak ditemukan'
+                    'status' => true,
+                    'message' => 'Level updated successfully',
                 ]);
             }
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Level not found',
+            ]);
         }
         return redirect('/');
     }
 
     public function confirm_ajax(string $id)
     {
-        $user = UserModel::find($id);
-        return view('user.confirm_ajax', ['user' => $user]);
+        $level = LevelModel::find($id);
+        return view('level.confirm_ajax', ['level' => $level]);
     }
 
     // public function delete_ajax(Request $request, $id)
@@ -286,7 +279,7 @@ class LevelController extends Controller
     public function delete_ajax(Request $request, $id)
     {
         try {
-            $user = UserModel::find($id);
+            $user = LevelModel::find($id);
             $user->delete();
             return response()->json([
                 'status'  => true,
