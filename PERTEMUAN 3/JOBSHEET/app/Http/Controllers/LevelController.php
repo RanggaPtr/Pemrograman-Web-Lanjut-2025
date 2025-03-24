@@ -240,11 +240,7 @@ class LevelController extends Controller
         return redirect('/level');
     }
 
-    // public function confirm_ajax(string $id)
-    // {
-    //     $level = LevelModel::find($id);
-    //     return view('level.confirm_ajax');
-    // }
+
     public function confirm_ajax(string $id)
     {
         $level = LevelModel::find($id);
@@ -254,27 +250,6 @@ class LevelController extends Controller
         return view('level.confirm_ajax', ['level' => $level]);
     }
 
-    // public function delete_ajax(Request $request, $id)
-    // {
-    //     if ($request->ajax() || $request->wantsJson()) {
-
-    //         $user = UserModel::find($id);
-
-    //         if ($user) {
-    //             $user->delete();
-    //             return response()->json([
-    //                 'status'  => true,
-    //                 'message' => 'Data berhasil dihapus'
-    //             ]);
-    //         } else {
-    //             return response()->json([
-    //                 'status'  => false,
-    //                 'message' => 'Data tidak ditemukan'
-    //             ]);
-    //         }
-    //     }
-    //     return redirect('/');
-    // }
 
     // public function delete_ajax menggunakan try catch
     public function delete_ajax(Request $request, $id)
