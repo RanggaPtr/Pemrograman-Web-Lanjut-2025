@@ -59,12 +59,9 @@ class BarangController extends Controller
         return DataTables::of($barangQuery)
             ->addIndexColumn()  // Adds a sequential index column for row numbering.
             ->addColumn('aksi', function ($barang) {
-                // Create HTML for action buttons: Detail, Edit, and Delete.
-                $btn  = '<a href="' . url('/barang/' . $barang->barang_id) . '" class="btn btn-info btn-sm">Detail</a> ';
-                $btn .= '<a href="' . url('/barang/' . $barang->barang_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
-                $btn .= '<form class="d-inline-block" method="POST" action="' . url('/barang/' . $barang->barang_id) . '">'
-                    . csrf_field() . method_field('DELETE') .
-                    '<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin menghapus data ini?\');">Hapus</button></form>';
+                $btn  = '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/barang/' . $barang->level_id) . '\')" class="btn btn-info btn-sm">Detail</a> ';
+                $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/barang/' . $barang->level_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</a> ';
+                $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/barang/' . $barang->level_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</a>';
                 return $btn;
             })
             ->rawColumns(['aksi'])  // Instruct DataTables that the 'aksi' column contains HTML.

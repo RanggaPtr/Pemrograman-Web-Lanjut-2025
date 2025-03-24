@@ -25,7 +25,7 @@
                     <div class="col-3">
                         <select class="form-control" id="kategori_id" name="kategori_id" required>
                             <option value="">- Semua -</option>
-                            @foreach($kategori as $item)  <!-- Corrected $level to $kategori -->
+                            @foreach($kategori as $item) <!-- Corrected $level to $kategori -->
                             <option value="{{ $item->kategori_id }}">{{ $item->kategori_nama }}</option>
                             @endforeach
                         </select>
@@ -46,6 +46,9 @@
         </table>
     </div>
 </div>
+
+<div id="myModal" class="modal fade animate shake" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" data-width="75%" aria-hidden="true"></div>
+
 @endsection
 
 @push('css')
@@ -53,15 +56,24 @@
 
 @push('js')
 <script>
+    function modalAction(url = '') {
+        $('#myModal').load(url, function() {
+            $('#myModal').modal('show');
+        });
+        console.log(url);
+        // return redirect('/level');
+    }
+
+    var dataKategori;
     $(document).ready(function() {
-        var dataKategori = $('#table_kategori').DataTable({
+        dataKategori = $('#table_kategori').DataTable({
             serverSide: true,
             ajax: {
                 url: "{{ url('kategori/list') }}",
                 dataType: "json",
                 type: "POST",
                 data: function(d) {
-                    d.kategori_id = $('#kategori_id').val();  // Corrected filter variable
+                    d.kategori_id = $('#kategori_id').val(); // Corrected filter variable
                 }
             },
             columns: [{
