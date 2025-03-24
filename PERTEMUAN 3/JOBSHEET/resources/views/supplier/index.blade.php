@@ -29,7 +29,7 @@
                         <!-- Renamed 'level_id' to 'supplier_id' for consistency with the DataTables code -->
                         <select class="form-control" id="supplier_id" name="supplier_id" required>
                             <option value="">- Semua -</option>
-                            @foreach($level as $item)
+                            @foreach($supplier as $item)
                                 <!-- 'level' now holds all supplier records (from your controller).
                                      Replace level_id/level_nama with the actual supplier fields. -->
                                 <option value="{{ $item->supplier_id }}">{{ $item->supplier_nama }}</option>
@@ -54,6 +54,9 @@
         </table>
     </div>
 </div>
+
+<div id="myModal" class="modal fade animate shake" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" data-width="75%" aria-hidden="true"></div>
+
 @endsection
 
 @push('css')
@@ -61,8 +64,17 @@
 
 @push('js')
 <script>
+    function modalAction(url = '') {
+        $('#myModal').load(url, function() {
+            $('#myModal').modal('show');
+        });
+        console.log(url);
+        // return redirect('/level');
+    }
+
+    var dataSupplier;
     $(document).ready(function() {
-        var dataSupplier = $('#table_supplier').DataTable({
+        dataSupplier = $('#table_supplier').DataTable({
             // Enable server-side processing if your controller returns server-side data
             serverSide: true,
             ajax: {
