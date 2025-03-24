@@ -87,12 +87,18 @@ class UserController extends Controller
 
         return DataTables::of($users)
             ->addIndexColumn()  // Menambahkan kolom index / no urut (default nama kolom: DT_RowIndex)  
-            ->addColumn('aksi', function ($user) {
-                // Menambahkan kolom aksi
-                $btn  = '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+            // ->addColumn('aksi', function ($user) {
+            //     // Menambahkan kolom aksi
+            //     $btn  = '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+            //     $btn .= '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+            //     $btn .= '<button onclick="modalAction(\'' . url('/user/' . $user->user_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
 
+            //     return $btn;
+            // })
+            ->addColumn('aksi', function ($user) {
+                $btn  = '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/user/' . $user->user_id) . '\')" class="btn btn-info btn-sm">Detail</a> ';
+                $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/user/' . $user->user_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</a> ';
+                $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/user/' . $user->user_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</a>';
                 return $btn;
             })
             ->rawColumns(['aksi']) // Menandakan bahwa kolom aksi mengandung HTML  
@@ -234,8 +240,8 @@ class UserController extends Controller
     public function create_ajax()
     {
         // if (request()->ajax()) {
-            $level = LevelModel::select('level_id', 'level_nama')->get();
-            return view('user.create_ajax',['level'=>$level]);
+        $level = LevelModel::select('level_id', 'level_nama')->get();
+        return view('user.create_ajax', ['level' => $level]);
         // }
         // return redirect('/');
     }
@@ -252,7 +258,7 @@ class UserController extends Controller
             ];
 
             // use iluminate/support/Facades/Validator
-            $validator =Validator::make($request->all(), $rules);
+            $validator = Validator::make($request->all(), $rules);
 
             if ($validator->fails()) {
                 return response(
@@ -368,6 +374,4 @@ class UserController extends Controller
             ]);
         }
     }
-
-
 }
