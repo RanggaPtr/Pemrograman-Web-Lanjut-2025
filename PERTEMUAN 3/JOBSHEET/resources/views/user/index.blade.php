@@ -64,6 +64,7 @@
         $('#myModal').load(url, function() {
             $('#myModal').modal('show');
         });
+        console.log(url);
     }
 
     var dataUser;

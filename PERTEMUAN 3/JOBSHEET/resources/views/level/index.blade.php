@@ -45,55 +45,67 @@
         </table>
     </div>
 </div>
+
+<div id="myModal" class="modal fade animate shake" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" data-width="75%" aria-hidden="true"></div>
+
 @endsection
 
 
-        @push('css')
-        @endpush
+@push('css')
+@endpush
 
-        @push('js')
-        <script>
-            $(document).ready(function() {
-                var dataLevel = $('#table_level').DataTable({
-                    // serverSide: true, jika ingin menggunakan server side processing 
-                    serverSide: true,
-                    ajax: {
-                        "url": "{{ url('level/list') }}",
-                        "dataType": "json",
-                        "type": "POST",
-                        "data": function(d) {
-                            d.level_kode = $('#level_kode').val();
-                        }
-                    },
-                    columns: [{ // nomor urut dari laravel datatable addIndexColumn() 
-                        data: "DT_RowIndex",
-                        className: "text-center",
-                        orderable: false,
-                        searchable: false
-                    }, {
-                        data: "level_kode",
-                        className: "",
-                        // orderable: true, jika ingin kolom ini bisa diurutkan  
-                        orderable: true,
-                        // searchable: true, jika ingin kolom ini bisa dicari 
-                        searchable: true
-                    }, {
-                        data: "level_nama",
-                        className: "",
-                        orderable: true,
-                        searchable: true
-                    }, {
-                        data: "aksi",
-                        className: "",
-                        orderable: false,
-                        searchable: false
-                    }]
-                });
+@push('js')
+<script>
+    function modalAction(url = '') {
+        $('#myModal').load(url, function() {
+            $('#myModal').modal('show');
+        });
+        console.log(url);
+        // return redirect('/level');
+    }
 
-                $('#level_kode').on('change', function() {
-                    dataLevel.ajax.reload();
-                });
+    var dataLevel;
+    $(document).ready(function() {
+        dataLevel = $('#table_level').DataTable({
+            // serverSide: true, jika ingin menggunakan server side processing 
+            serverSide: true,
+            ajax: {
+                "url": "{{ url('level/list') }}",
+                "dataType": "json",
+                "type": "POST",
+                "data": function(d) {
+                    d.level_kode = $('#level_kode').val();
+                }
+            },
+            columns: [{ // nomor urut dari laravel datatable addIndexColumn() 
+                data: "DT_RowIndex",
+                className: "text-center",
+                orderable: false,
+                searchable: false
+            }, {
+                data: "level_kode",
+                className: "",
+                // orderable: true, jika ingin kolom ini bisa diurutkan  
+                orderable: true,
+                // searchable: true, jika ingin kolom ini bisa dicari 
+                searchable: true
+            }, {
+                data: "level_nama",
+                className: "",
+                orderable: true,
+                searchable: true
+            }, {
+                data: "aksi",
+                className: "",
+                orderable: false,
+                searchable: false
+            }]
+        });
 
-            });
-        </script>
-        @endpush
+        $('#level_kode').on('change', function() {
+            dataLevel.ajax.reload();
+        });
+
+    });
+</script>
+@endpush

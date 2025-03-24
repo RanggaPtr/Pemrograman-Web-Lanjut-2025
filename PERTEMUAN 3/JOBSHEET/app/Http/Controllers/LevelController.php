@@ -165,11 +165,10 @@ class LevelController extends Controller
 
     public function create_ajax()
     {
-        // if (request()->ajax()) {
-        $level = LevelModel::select('level_id', 'level_kode', 'level_nama')->get();
-        return view('level.create_ajax', ['level' => $level]);
-        // }
-        // return redirect('/');
+        if (request()->ajax()) {
+            return view('level.create_ajax');
+        }
+        return redirect('/level');
     }
 
     public function store_ajax(Request $request)
@@ -197,7 +196,7 @@ class LevelController extends Controller
             LevelModel::create($request->all());
             return response()->json([
                 'status' => true,
-                'message' => 'Data user berhasil disimpan'
+                'message' => 'Data Level berhasil disimpan'
             ]);
         }
         redirect('/');
@@ -206,7 +205,6 @@ class LevelController extends Controller
     public function edit_ajax(string $id)
     {
         $level = LevelModel::find($id);
-        // $level = LevelModel::select('level_id', 'level_nama')->get();
         return view('level.edit_ajax', ['level' => $level]);
     }
 
@@ -250,7 +248,7 @@ class LevelController extends Controller
     public function confirm_ajax(string $id)
     {
         $level = LevelModel::find($id);
-        return view('level.confirm_ajax', ['level' => $level]);
+        return view('level.confirm_ajax');
     }
 
     // public function delete_ajax(Request $request, $id)
@@ -279,8 +277,8 @@ class LevelController extends Controller
     public function delete_ajax(Request $request, $id)
     {
         try {
-            $user = LevelModel::find($id);
-            $user->delete();
+            $level = LevelModel::find($id);
+            $level->delete();
             return response()->json([
                 'status'  => true,
                 'message' => 'Data berhasil dihapus'
