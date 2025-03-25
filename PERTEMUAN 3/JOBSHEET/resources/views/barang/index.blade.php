@@ -5,6 +5,7 @@
     <div class="card-header">
         <h3 class="card-title">{{ $page->title }}</h3>
         <div class="card-tools">
+            <button onclick="modalAction('{{ url('/barang/import') }}')" class="btn btn-sm btn-info mt-1">Import Barang</button>
             <a class="btn btn-sm btn-primary mt-1" href="{{ url('barang/create') }}">Tambah</a>
             <button onclick="modalAction('{{ url('/barang/create_ajax') }}')" class="btn btn-sm btn-success mt-1">Tambah Ajax</button>
         </div>
@@ -58,6 +59,9 @@ function modalAction(url = '') {
         if (status === "success") {
             $('#myModal').modal('show');
         } else {
+            console.log('Error Response:', response);
+            console.log('Status:', status);
+            console.log('XHR:', xhr);
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal Memuat Modal',
@@ -65,12 +69,13 @@ function modalAction(url = '') {
             });
             $('.modal-backdrop').remove();
         }
+        console.log(url);
     });
 }
 
-var dataBarang;
 $(document).ready(function() {
-    dataBarang = $('#table_barang').DataTable({
+    var dataBarang = $('#table_barang').DataTable({
+        processing: true,
         serverSide: true,
         ajax: {
             url: "{{ url('barang/list') }}",
@@ -81,18 +86,47 @@ $(document).ready(function() {
             }
         },
         columns: [
-            { data: "DT_RowIndex", className: "text-center", orderable: false, searchable: false },
+            { 
+                data: "barang_id", // Perubahan: Ganti DT_RowIndex dengan barang_id
+                className: "text-center", 
+                orderable: true, // Ubah menjadi true agar bisa diurutkan berdasarkan barang_id
+                searchable: false 
+            },
             { data: "kategori.kategori_nama", className: "", orderable: true, searchable: true },
             { data: "barang_kode", className: "", orderable: true, searchable: true },
             { data: "barang_nama", className: "", orderable: true, searchable: true },
-            { data: "harga_beli", className: "", orderable: true, searchable: true },
-            { data: "harga_jual", className: "", orderable: true, searchable: true },
+            { 
+                data: "harga_beli", 
+                className: "", 
+                orderable: true, 
+                searchable: true,
+                render: function(data) {
+                    return new Intl.NumberFormat('id-ID').format(data);
+                }
+            },
+            { 
+                data: "harga_jual", 
+                className: "", 
+                orderable: true, 
+                searchable: true,
+                render: function(data) {
+                    return new Intl.NumberFormat('id-ID').format(data);
+                }
+            },
             { data: "aksi", className: "", orderable: false, searchable: false }
         ]
     });
 
+    // Event untuk filter kategori
     $('#kategori_id').on('change', function() {
         dataBarang.ajax.reload();
+    });
+
+    // Event pencarian dengan Enter
+    $('#table_barang_filter input').unbind().on('keyup', function(e) {
+        if (e.keyCode === 13) {
+            dataBarang.search(this.value).draw();
+        }
     });
 });
 </script>
