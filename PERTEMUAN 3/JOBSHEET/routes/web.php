@@ -36,7 +36,7 @@ Route::get('login', [AuthController::class, 'login'])->name('login');
 Route::post('login', [AuthController::class, 'postlogin']);
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth'); //untuk keamanan, logout sebaiknya menggunakan metode POST untuk mencegah logout tidak sengaja (misalnya, jika tautan /logout diakses oleh crawler). 
 
-Route::middleware(['auth'])->group(function () { // artinya semua route di dalam group ini harus login dulu
+Route::middleware(['authorize:ADM'])->group(function () { // artinya semua route di dalam group ini harus login dulu
 
 
     Route::get('/', [WelcomeController::class, 'index']);
