@@ -34,10 +34,14 @@ Route::pattern('id', '[0-9]+'); // artinya ketika ada parameter {id}, maka harus
 
 Route::get('login', [AuthController::class, 'login'])->name('login');
 Route::post('login', [AuthController::class, 'postlogin']);
+
+Route::get('register', [AuthController::class, 'register'])->name('register');
+Route::post('register', [AuthController::class, 'postregister']);
+
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth'); //untuk keamanan, logout sebaiknya menggunakan metode POST untuk mencegah logout tidak sengaja (misalnya, jika tautan /logout diakses oleh crawler). 
 
-Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua route di dalam group ini harus login dulu
 
+Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua route di dalam group ini harus login dulu
 
     Route::get('/', [WelcomeController::class, 'index']);
 
