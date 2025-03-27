@@ -355,7 +355,7 @@ class SupplierController extends Controller
                     foreach ($data as $baris => $value) {
                         if ($baris > 1) { // Lewati baris header
                             // Validasi data sebelum insert
-                            if (empty($value['A']) || empty($value['B']) || empty($value['C']) ) {
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C'])) {
                                 throw new \Exception("Data pada baris $baris tidak lengkap.");
                             }
 
@@ -369,7 +369,7 @@ class SupplierController extends Controller
                             if (SupplierModel::where('supplier_kode', $value['A'])->exists()) {
                                 throw new \Exception("Kode supplier {$value['B']} pada baris $baris sudah ada.");
                             }
-                            
+
                             $insert[] = [
                                 'supplier_kode' => $value['A'],
                                 'supplier_nama' => $value['B'],
@@ -417,95 +417,111 @@ class SupplierController extends Controller
     }
 
     public function export_excel()
-{
-    // Pastikan tidak ada output sebelum header dikirim
-    // Ini mencegah error "headers already sent"
-    if (ob_get_length()) {
-        ob_clean();
-    }
+    {
+        // Pastikan tidak ada output sebelum header dikirim
+        // Ini mencegah error "headers already sent"
+        if (ob_get_length()) {
+            ob_clean();
+        }
 
-    // Periksa apakah ekstensi ZipArchive tersedia
-    // Xlsx writer membutuhkan ZipArchive untuk membuat file .xlsx
-    if (!class_exists('ZipArchive')) {
-        \Log::error('ZipArchive not found during export in SupplierController');
-        return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
-    }
+        // Periksa apakah ekstensi ZipArchive tersedia
+        // Xlsx writer membutuhkan ZipArchive untuk membuat file .xlsx
+        if (!class_exists('ZipArchive')) {
+            \Log::error('ZipArchive not found during export in SupplierController');
+            return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
+        }
 
-    try {
+        try {
+            // Ambil data supplier yang akan diekspor
+            $suppliers = SupplierModel::select('supplier_id', 'supplier_kode', 'supplier_nama', 'supplier_alamat')
+                ->orderBy('supplier_id')
+                ->get();
+
+            // Periksa apakah ada data supplier
+            if ($suppliers->isEmpty()) {
+                return redirect()->back()->with('error', 'Tidak ada data supplier untuk diekspor.');
+            }
+
+            // Buat instance spreadsheet baru
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Buat header tabel
+            $sheet->setCellValue('A1', 'No');
+            $sheet->setCellValue('B1', 'Kode Supplier');
+            $sheet->setCellValue('C1', 'Nama Supplier');
+            $sheet->setCellValue('D1', 'Alamat Supplier');
+
+            // Bold header
+            $sheet->getStyle('A1:D1')->getFont()->setBold(true);
+
+            // Tambahkan border pada header
+            $sheet->getStyle('A1:D1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Isi data supplier
+            $no = 1;
+            $baris = 2; // Mulai dari baris 2 karena baris 1 adalah header
+            foreach ($suppliers as $supplier) {
+                $sheet->setCellValue('A' . $baris, $no);
+                $sheet->setCellValue('B' . $baris, $supplier->supplier_kode);
+                $sheet->setCellValue('C' . $baris, $supplier->supplier_nama);
+                $sheet->setCellValue('D' . $baris, $supplier->supplier_alamat);
+
+                $no++;
+                $baris++;
+            }
+
+            // Set lebar kolom secara otomatis
+            foreach (range('A', 'D') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Beri nama sheet
+            $sheet->setTitle('Data Supplier');
+
+            // Buat writer untuk format Xlsx
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            // Buat nama file dengan format "Data Supplier YYYY-MM-DD.xlsx"
+            $filename = 'Data Supplier ' . date('Y-m-d') . '.xlsx';
+
+            // Set header untuk download file
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Pragma: no-cache');
+
+            // Simpan file ke output (download)
+            $writer->save('php://output');
+
+            // Bersihkan spreadsheet dari memori
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            // Hentikan eksekusi
+            exit;
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Export failed in SupplierController', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
+    }
+    public function export_pdf()
+    {
         // Ambil data supplier yang akan diekspor
         $suppliers = SupplierModel::select('supplier_id', 'supplier_kode', 'supplier_nama', 'supplier_alamat')
             ->orderBy('supplier_id')
             ->get();
 
-        // Periksa apakah ada data supplier
-        if ($suppliers->isEmpty()) {
-            return redirect()->back()->with('error', 'Tidak ada data supplier untuk diekspor.');
-        }
+        // Gunakan library Barryvdh\DomPDF\Facade\Pdf
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('supplier.export_pdf', ['suppliers' => $suppliers]);
+        $pdf->setPaper('a4', 'portrait'); // Set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // Set true untuk mengizinkan gambar dari URL
+        $pdf->render();
 
-        // Buat instance spreadsheet baru
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Buat header tabel
-        $sheet->setCellValue('A1', 'No');
-        $sheet->setCellValue('B1', 'Kode Supplier');
-        $sheet->setCellValue('C1', 'Nama Supplier');
-        $sheet->setCellValue('D1', 'Alamat Supplier');
-
-        // Bold header
-        $sheet->getStyle('A1:D1')->getFont()->setBold(true);
-
-        // Tambahkan border pada header
-        $sheet->getStyle('A1:D1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-
-        // Isi data supplier
-        $no = 1;
-        $baris = 2; // Mulai dari baris 2 karena baris 1 adalah header
-        foreach ($suppliers as $supplier) {
-            $sheet->setCellValue('A' . $baris, $no);
-            $sheet->setCellValue('B' . $baris, $supplier->supplier_kode);
-            $sheet->setCellValue('C' . $baris, $supplier->supplier_nama);
-            $sheet->setCellValue('D' . $baris, $supplier->supplier_alamat);
-
-            $no++;
-            $baris++;
-        }
-
-        // Set lebar kolom secara otomatis
-        foreach (range('A', 'D') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-
-        // Beri nama sheet
-        $sheet->setTitle('Data Supplier');
-
-        // Buat writer untuk format Xlsx
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
-
-        // Buat nama file dengan format "Data Supplier YYYY-MM-DD.xlsx"
-        $filename = 'Data Supplier ' . date('Y-m-d') . '.xlsx';
-
-        // Set header untuk download file
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
-        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-        header('Pragma: no-cache');
-
-        // Simpan file ke output (download)
-        $writer->save('php://output');
-
-        // Bersihkan spreadsheet dari memori
-        $spreadsheet->disconnectWorksheets();
-        unset($spreadsheet);
-
-        // Hentikan eksekusi
-        exit;
-    } catch (\Exception $e) {
-        // Log error untuk debugging
-        \Log::error('Export failed in SupplierController', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-        return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        // Stream PDF ke browser dengan nama file dinamis
+        return $pdf->stream('Data Supplier ' . date('Y-m-d H:i:s') . '.pdf');
     }
-}
 }

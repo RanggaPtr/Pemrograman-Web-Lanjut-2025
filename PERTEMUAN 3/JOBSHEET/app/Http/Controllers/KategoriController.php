@@ -477,4 +477,20 @@ class KategoriController extends Controller
             return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
         }
     }
+    public function export_pdf()
+    {
+        // Ambil data kategori yang akan diekspor
+        $kategoris = KategoriModel::select('kategori_id', 'kategori_kode', 'kategori_nama')
+            ->orderBy('kategori_id')
+            ->get();
+
+        // Gunakan library Barryvdh\DomPDF\Facade\Pdf
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kategori.export_pdf', ['kategoris' => $kategoris]);
+        $pdf->setPaper('a4', 'portrait'); // Set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // Set true untuk mengizinkan gambar dari URL
+        $pdf->render();
+
+        // Stream PDF ke browser dengan nama file dinamis
+        return $pdf->stream('Data Kategori ' . date('Y-m-d H:i:s') . '.pdf');
+    }
 }

@@ -570,4 +570,22 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
         }
     }
+
+    public function export_pdf()
+    {
+        // Ambil data user yang akan diekspor
+        $users = UserModel::select('user_id', 'level_id', 'username', 'nama')
+            ->with('level')
+            ->orderBy('user_id')
+            ->get();
+
+        // Gunakan library Barryvdh\DomPDF\Facade\Pdf
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('user.export_pdf', ['users' => $users]);
+        $pdf->setPaper('a4', 'portrait'); // Set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // Set true untuk mengizinkan gambar dari URL
+        $pdf->render();
+
+        // Stream PDF ke browser dengan nama file dinamis
+        return $pdf->stream('Data User ' . date('Y-m-d H:i:s') . '.pdf');
+    }
 }
