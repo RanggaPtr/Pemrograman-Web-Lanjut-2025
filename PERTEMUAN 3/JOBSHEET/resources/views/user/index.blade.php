@@ -4,6 +4,7 @@
 <a href="{{ url('/user/export_excel') }}" class="btn btn-success"><i class="fa fa-file-excel"></i> Export Data User</a> 
 <a href="{{ url('/user/export_pdf') }}" class="btn btn-danger"><i class="fa fa-file-pdf"></i> Export Data User</a> 
 <button onclick="modalAction('{{ url('/user/import') }}')" class="btn btn-sm btn-info mt-1">Import Data User</button>
+<!-- <br><br> -->
 
 <div class="card card-outline card-primary">
     <div class="card-header">
