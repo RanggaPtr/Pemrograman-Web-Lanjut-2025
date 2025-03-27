@@ -1,7 +1,8 @@
 @extends('layouts.template')
 
 @section('content')
-<a href="{{ url('/supplier/export_excel') }}" class="btn btn-primary"><i class="fa fa-file-excel"></i> Export Data Supplier</a> 
+<a href="{{ url('/supplier/export_excel') }}" class="btn btn-success"><i class="fa fa-file-excel"></i> Export Data Supplier</a> 
+<a href="{{ url('/supplier/export_pdf') }}" class="btn btn-danger"><i class="fa fa-file-pdf"></i> Export Data Supplier</a> 
 <button onclick="modalAction('{{ url('/supplier/import') }}')" class="btn btn-sm btn-info mt-1">Import Data Supplier</button>
 
 <div class="card card-outline card-primary">
