@@ -266,7 +266,7 @@ class KategoriController extends Controller
         return redirect('/kategori');
     }
 
-    
+
     public function confirm_ajax(string $id)
     {
         $kategori = KategoriModel::find($id);
@@ -294,98 +294,187 @@ class KategoriController extends Controller
         }
     }
 
-     // Tambahan: Fitur impor dari kode program 2
-     public function import()
-     {
-         return view('kategori.import');
-     }
- 
-     public function import_ajax(Request $request)
-     {
-         if ($request->ajax() || $request->wantsJson()) {
-             $rules = [
-                 'file_kategori' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
-             ];
- 
-             $validator = Validator::make($request->all(), $rules);
-             if ($validator->fails()) {
-                 return response()->json([
-                     'status' => false,
-                     'message' => 'Validasi Gagal',
-                     'msgField' => $validator->errors()
-                 ]);
-             }
- 
-             try {
-                 $file = $request->file('file_kategori');
-                 $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
-                 $reader->setReadDataOnly(true);
-                 $spreadsheet = $reader->load($file->getRealPath());
-                 $sheet = $spreadsheet->getActiveSheet();
-                 $data = $sheet->toArray(null, false, true, true);
- 
-                 $insert = [];
-                 if (count($data) > 1) {
-                     foreach ($data as $baris => $value) {
-                         if ($baris > 1) { // Lewati baris header
-                             // Validasi data sebelum insert
-                             if (empty($value['A']) || empty($value['B'])) {
-                                 throw new \Exception("Data pada baris $baris tidak lengkap.");
-                             }
- 
-                             // Validasi kategori_id
+    // Tambahan: Fitur impor dari kode program 2
+    public function import()
+    {
+        return view('kategori.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_kategori' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            try {
+                $file = $request->file('file_kategori');
+                $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true);
+
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati baris header
+                            // Validasi data sebelum insert
+                            if (empty($value['A']) || empty($value['B'])) {
+                                throw new \Exception("Data pada baris $baris tidak lengkap.");
+                            }
+
+                            // Validasi kategori_id
                             //  $kategori = KategoriModel::find($value['A']);
                             //  if (!$kategori) {
                             //      throw new \Exception("Kategori dengan ID {$value['A']} pada baris $baris tidak ditemukan.");
                             //  }
- 
-                             // Validasi kategori_kode unik
-                             if (KategoriModel::where('kategori_kode', $value['A'])->exists()) {
-                                 throw new \Exception("Kode kategori {$value['A']} pada baris $baris sudah ada.");
-                             }
- 
-                             $insert[] = [
-                                 'kategori_kode' => $value['A'],
-                                 'kategori_nama' => $value['B'],
-                                 'created_at' => now(),
-                                 'updated_at' => now(),
-                             ];
-                         }
-                     }
- 
-                     if (count($insert) > 0) {
-                         $insertedCount = KategoriModel::insertOrIgnore($insert);
-                         if ($insertedCount === 0) {
-                             return response()->json([
-                                 'status' => false,
-                                 'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
-                             ]);
-                         }
- 
-                         return response()->json([
-                             'status' => true,
-                             'message' => "Data berhasil diimport ($insertedCount baris)"
-                         ]);
-                     } else {
-                         return response()->json([
-                             'status' => false,
-                             'message' => 'Tidak ada data yang diimport'
-                         ]);
-                     }
-                 } else {
-                     return response()->json([
-                         'status' => false,
-                         'message' => 'File Excel kosong atau tidak memiliki data'
-                     ]);
-                 }
-             } catch (\Exception $e) {
-                 \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-                 return response()->json([
-                     'status' => false,
-                     'message' => 'Gagal mengimpor data: ' . $e->getMessage()
-                 ], 500);
-             }
-         }
-         return redirect('/kategori');
-     }
+
+                            // Validasi kategori_kode unik
+                            if (KategoriModel::where('kategori_kode', $value['A'])->exists()) {
+                                throw new \Exception("Kode kategori {$value['A']} pada baris $baris sudah ada.");
+                            }
+
+                            $insert[] = [
+                                'kategori_kode' => $value['A'],
+                                'kategori_nama' => $value['B'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (count($insert) > 0) {
+                        $insertedCount = KategoriModel::insertOrIgnore($insert);
+                        if ($insertedCount === 0) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                            ]);
+                        }
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data berhasil diimport ($insertedCount baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        return redirect('/kategori');
+    }
+
+    public function export_excel()
+    {
+        // Pastikan tidak ada output sebelum header dikirim
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        // Periksa apakah ekstensi ZipArchive tersedia
+        if (!class_exists('ZipArchive')) {
+            \Log::error('ZipArchive not found during export in KategoriController');
+            return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
+        }
+
+        try {
+            // Ambil data kategori yang akan diekspor
+            $kategoris = KategoriModel::select('kategori_id', 'kategori_kode', 'kategori_nama')
+                ->orderBy('kategori_id')
+                ->get();
+
+            // Periksa apakah ada data kategori
+            if ($kategoris->isEmpty()) {
+                return redirect()->back()->with('error', 'Tidak ada data kategori untuk diekspor.');
+            }
+
+            // Buat instance spreadsheet baru
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Buat header tabel
+            $sheet->setCellValue('A1', 'No');
+            $sheet->setCellValue('B1', 'Kode Kategori');
+            $sheet->setCellValue('C1', 'Nama Kategori');
+
+            // Bold header
+            $sheet->getStyle('A1:C1')->getFont()->setBold(true);
+
+            // Tambahkan border pada header
+            $sheet->getStyle('A1:C1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Isi data kategori
+            $no = 1;
+            $baris = 2;
+            foreach ($kategoris as $kategori) {
+                $sheet->setCellValue('A' . $baris, $no);
+                $sheet->setCellValue('B' . $baris, $kategori->kategori_kode);
+                $sheet->setCellValue('C' . $baris, $kategori->kategori_nama);
+
+                $no++;
+                $baris++;
+            }
+
+            // Set lebar kolom secara otomatis
+            foreach (range('A', 'C') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Beri nama sheet
+            $sheet->setTitle('Data Kategori');
+
+            // Buat writer untuk format Xlsx
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            // Buat nama file dengan format "Data Kategori YYYY-MM-DD.xlsx"
+            $filename = 'Data Kategori ' . date('Y-m-d') . '.xlsx';
+
+            // Set header untuk download file
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Pragma: no-cache');
+
+            // Simpan file ke output (download)
+            $writer->save('php://output');
+
+            // Bersihkan spreadsheet dari memori
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            // Hentikan eksekusi
+            exit;
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Export failed in KategoriController', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
+    }
 }

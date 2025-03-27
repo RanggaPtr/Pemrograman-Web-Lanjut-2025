@@ -305,7 +305,7 @@ class LevelController extends Controller
                     foreach ($data as $baris => $value) {
                         if ($baris > 1) { // Lewati baris header
                             // Validasi data sebelum insert
-                            if (empty($value['A']) || empty($value['B']) || empty($value['C']) ) {
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C'])) {
                                 throw new \Exception("Data pada baris $baris tidak lengkap.");
                             }
 
@@ -369,5 +369,94 @@ class LevelController extends Controller
             }
         }
         return redirect('/level');
+    }
+
+    public function export_excel()
+    {
+        // Pastikan tidak ada output sebelum header dikirim
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        // Periksa apakah ekstensi ZipArchive tersedia
+        if (!class_exists('ZipArchive')) {
+            \Log::error('ZipArchive not found during export in LevelController');
+            return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
+        }
+
+        try {
+            // Ambil data level yang akan diekspor
+            $levels = LevelModel::select('level_id', 'level_kode', 'level_nama')
+                ->orderBy('level_id')
+                ->get();
+
+            // Periksa apakah ada data level
+            if ($levels->isEmpty()) {
+                return redirect()->back()->with('error', 'Tidak ada data level untuk diekspor.');
+            }
+
+            // Buat instance spreadsheet baru
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Buat header tabel
+            $sheet->setCellValue('A1', 'No');
+            $sheet->setCellValue('B1', 'Kode Level');
+            $sheet->setCellValue('C1', 'Nama Level');
+
+            // Bold header
+            $sheet->getStyle('A1:C1')->getFont()->setBold(true);
+
+            // Tambahkan border pada header
+            $sheet->getStyle('A1:C1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Isi data level
+            $no = 1;
+            $baris = 2;
+            foreach ($levels as $level) {
+                $sheet->setCellValue('A' . $baris, $no);
+                $sheet->setCellValue('B' . $baris, $level->level_kode);
+                $sheet->setCellValue('C' . $baris, $level->level_nama);
+
+                $no++;
+                $baris++;
+            }
+
+            // Set lebar kolom secara otomatis
+            foreach (range('A', 'C') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Beri nama sheet
+            $sheet->setTitle('Data Level');
+
+            // Buat writer untuk format Xlsx
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            // Buat nama file dengan format "Data Level YYYY-MM-DD.xlsx"
+            $filename = 'Data Level ' . date('Y-m-d') . '.xlsx';
+
+            // Set header untuk download file
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Pragma: no-cache');
+
+            // Simpan file ke output (download)
+            $writer->save('php://output');
+
+            // Bersihkan spreadsheet dari memori
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            // Hentikan eksekusi
+            exit;
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Export failed in LevelController', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
     }
 }

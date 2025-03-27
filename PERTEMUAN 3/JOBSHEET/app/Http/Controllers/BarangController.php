@@ -407,4 +407,114 @@ class BarangController extends Controller
         }
         return redirect('/barang');
     }
+
+    public function export_excel()
+    {
+        // Pastikan tidak ada output sebelum header dikirim
+        // Ini mencegah error "headers already sent"
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        // Periksa apakah ekstensi ZipArchive tersedia
+        // Xlsx writer membutuhkan ZipArchive untuk membuat file .xlsx
+        if (!class_exists('ZipArchive')) {
+            \Log::error('ZipArchive not found during export');
+            return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
+        }
+
+        try {
+            // Ambil data barang yang akan diekspor
+            // Select hanya kolom yang diperlukan dan urutkan berdasarkan kategori_id
+            $barang = BarangModel::select('kategori_id', 'barang_kode', 'barang_nama', 'harga_beli', 'harga_jual')
+                ->orderBy('kategori_id')
+                ->with('kategori') // Eager load relasi kategori untuk mengambil kategori_nama
+                ->get();
+
+            // Periksa apakah ada data barang
+            // Jika tidak ada data, kembalikan pesan error
+            if ($barang->isEmpty()) {
+                return redirect()->back()->with('error', 'Tidak ada data barang untuk diekspor.');
+            }
+
+            // Buat instance spreadsheet baru
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            // Ambil sheet aktif
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Buat header tabel
+            $sheet->setCellValue('A1', 'No');
+            $sheet->setCellValue('B1', 'Kategori');
+            $sheet->setCellValue('C1', 'Kode Barang');
+            $sheet->setCellValue('D1', 'Nama Barang');
+            $sheet->setCellValue('E1', 'Harga Beli');
+            $sheet->setCellValue('F1', 'Harga Jual');
+
+            // Bold header
+            // Perbaikan: Gunakan range A1:F1 karena ada 6 kolom
+            $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+
+            // Format header dengan border
+            // Tambahkan border pada header untuk tampilan yang lebih rapi
+            $sheet->getStyle('A1:F1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Format kolom Harga Beli dan Harga Jual sebagai mata uang
+            // Gunakan format number dengan pemisah ribuan
+            $sheet->getStyle('E2:E' . ($barang->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('F2:F' . ($barang->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
+
+            // Isi data barang
+            $no = 1;
+            $baris = 2; // Mulai dari baris 2 karena baris 1 adalah header
+            foreach ($barang as $value) {
+                $sheet->setCellValue('A' . $baris, $no);
+                $sheet->setCellValue('B' . $baris, $value->kategori->kategori_nama ?? 'N/A'); // Gunakan 'N/A' jika kategori tidak ditemukan
+                $sheet->setCellValue('C' . $baris, $value->barang_kode);
+                $sheet->setCellValue('D' . $baris, $value->barang_nama);
+                $sheet->setCellValue('E' . $baris, $value->harga_beli);
+                $sheet->setCellValue('F' . $baris, $value->harga_jual);
+
+                $no++;
+                $baris++;
+            }
+
+            // Set lebar kolom secara otomatis
+            // Gunakan range A hingga F karena ada 6 kolom
+            foreach (range('A', 'F') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Beri nama sheet
+            $sheet->setTitle('Data Barang');
+
+            // Buat writer untuk format Xlsx
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            // Buat nama file dengan format "Data Barang YYYY-MM-DD.xlsx"
+            $filename = 'Data Barang ' . date('Y-m-d') . '.xlsx';
+
+            // Set header untuk download file
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            // Konsolidasi header Cache-Control untuk mencegah caching
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Pragma: no-cache');
+
+            // Simpan file ke output (download)
+            $writer->save('php://output');
+
+            // Bersihkan spreadsheet dari memori
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            // Hentikan eksekusi
+            exit;
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Export failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
+    }
 }
