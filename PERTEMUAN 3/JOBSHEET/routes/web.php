@@ -8,6 +8,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
 use App\Models\LevelModel;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Monolog\Level;
 
@@ -53,6 +54,8 @@ Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua r
         Route::post('/', [UserController::class, 'store']);           //menyimpan data user 
         Route::get('/create_ajax', [UserController::class, 'create_ajax']);
         Route::post('/ajax', [UserController::class, 'store_ajax']);
+        Route::get('/import', [UserController::class, 'import']);
+        Route::post('/import_ajax', [UserController::class, 'import_ajax']);
         // route dinamis
         Route::get('/{id}', [UserController::class, 'show']);         //menampilkan detail user
         Route::get('/{id}/edit', [UserController::class, 'edit']);    //menampilkan halaman form edit user
@@ -72,6 +75,8 @@ Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua r
         Route::post('/', [LevelController::class, 'store']);           //menyimpan data level baru
         Route::get('/create_ajax', [LevelController::class, 'create_ajax']);
         Route::post('/ajax', [LevelController::class, 'store_ajax']);
+        Route::get('/import', [LevelController::class, 'import']);
+        Route::post('/import_ajax', [LevelController::class, 'import_ajax']);
         // route dinamis  
         Route::get('/{id}', [LevelController::class, 'show']);         //menampilkan detail level
         Route::get('/{id}/edit', [LevelController::class, 'edit']);    //menampilkan halaman form edit level
@@ -92,6 +97,8 @@ Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua r
         Route::post('/', [KategoriController::class, 'store']);           //menyimpan data user baru
         Route::get('/create_ajax', [KategoriController::class, 'create_ajax']);
         Route::post('/ajax', [KategoriController::class, 'store_ajax']);
+        Route::get('/import', [KategoriController::class, 'import']);
+        Route::post('/import_ajax', [KategoriController::class, 'import_ajax']);
         // route dinamis
         Route::get('/{id}', [KategoriController::class, 'show']);         //menampilkan detail user
         Route::get('/{id}/edit', [KategoriController::class, 'edit']);    //menampilkan halaman form edit user
@@ -111,6 +118,8 @@ Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua r
         Route::post('/', [SupplierController::class, 'store']);           //menyimpan data user baru
         Route::get('/create_ajax', [SupplierController::class, 'create_ajax']);
         Route::post('/ajax', [SupplierController::class, 'store_ajax']);
+        Route::get('/import', [SupplierController::class, 'import']);
+        Route::post('/import_ajax', [SupplierController::class, 'import_ajax']);
         // route dinamis
         Route::get('/{id}', [SupplierController::class, 'show']);         //menampilkan detail user
         Route::get('/{id}/edit', [SupplierController::class, 'edit']);    //menampilkan halaman form edit user

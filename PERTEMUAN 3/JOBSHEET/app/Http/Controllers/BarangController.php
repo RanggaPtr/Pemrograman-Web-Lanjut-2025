@@ -327,43 +327,84 @@ class BarangController extends Controller
                 ]);
             }
 
-            $file = $request->file('file_barang');
-            $reader = IOFactory::createReader('Xlsx');
-            $reader->setReadDataOnly(true);
-            $spreadsheet = $reader->load($file->getRealPath());
-            $sheet = $spreadsheet->getActiveSheet();
-            $data = $sheet->toArray(null, false, true, true);
+            try {
+                $file = $request->file('file_barang');
+                $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true);
 
-            $insert = [];
-            if (count($data) > 1) {
-                foreach ($data as $baris => $value) {
-                    if ($baris > 1) { // Lewati baris header
-                        $insert[] = [
-                            'kategori_id' => $value['A'],
-                            'barang_kode' => $value['B'],
-                            'barang_nama' => $value['C'],
-                            'harga_beli' => $value['D'],
-                            'harga_jual' => $value['E'],
-                            'created_at' => now(),
-                        ];
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati baris header
+                            // Validasi data sebelum insert
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C']) || empty($value['D']) || empty($value['E'])) {
+                                throw new \Exception("Data pada baris $baris tidak lengkap.");
+                            }
+
+                            // Validasi kategori_id
+                            $kategori = KategoriModel::find($value['A']);
+                            if (!$kategori) {
+                                throw new \Exception("Kategori dengan ID {$value['A']} pada baris $baris tidak ditemukan.");
+                            }
+
+                            // Validasi barang_kode unik
+                            if (BarangModel::where('barang_kode', $value['B'])->exists()) {
+                                throw new \Exception("Kode barang {$value['B']} pada baris $baris sudah ada.");
+                            }
+
+                            // Validasi harga_beli dan harga_jual adalah numerik
+                            if (!is_numeric($value['D']) || !is_numeric($value['E'])) {
+                                throw new \Exception("Harga beli atau harga jual pada baris $baris harus berupa angka.");
+                            }
+
+                            $insert[] = [
+                                'kategori_id' => $value['A'],
+                                'barang_kode' => $value['B'],
+                                'barang_nama' => $value['C'],
+                                'harga_beli' => $value['D'],
+                                'harga_jual' => $value['E'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
                     }
-                }
 
-                if (count($insert) > 0) {
-                    BarangModel::insertOrIgnore($insert);
-                }
+                    if (count($insert) > 0) {
+                        $insertedCount = BarangModel::insertOrIgnore($insert);
+                        if ($insertedCount === 0) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                            ]);
+                        }
 
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data berhasil diimport'
-                ]);
-            } else {
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data berhasil diimport ($insertedCount baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
                 return response()->json([
                     'status' => false,
-                    'message' => 'Tidak ada data yang diimport'
-                ]);
+                    'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                ], 500);
             }
         }
-        return redirect('/barang'); // Sesuaikan redirect dengan flow kode program 1
+        return redirect('/barang');
     }
 }

@@ -56,7 +56,7 @@
                                 title: 'Berhasil',
                                 text: response.message
                             });
-                            dataBarang.ajax.reload(); // Perbaikan: Ganti tableBarang menjadi dataBarang
+                            dataBarang.ajax.reload();
                         } else {
                             $('.error-text').text('');
                             $.each(response.msgField, function(prefix, val) {
@@ -68,6 +68,14 @@
                                 text: response.message
                             });
                         }
+                    },
+                    // Error handling memunculkan pop up pesan eror menggunakan sweet alert (swal)
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Terjadi Kesalahan',
+                            text: 'Gagal mengimpor data: ' + (xhr.responseJSON?.message || 'Silakan coba lagi.')
+                        });
                     }
                 });
                 return false;
