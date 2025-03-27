@@ -43,7 +43,7 @@ Route::post('logout', [AuthController::class, 'logout'])->middleware('auth'); //
 
 Route::middleware(['auth'])->group(function () {
 
-
+    Route::post('/user/update-profile-photo', [UserController::class, 'updateProfilePhoto'])->name('user.updateProfilePhoto');
 
     Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua route di dalam group ini harus login dulu
 

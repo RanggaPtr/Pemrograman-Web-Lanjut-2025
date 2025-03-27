@@ -6,7 +6,9 @@ use App\Models\LevelModel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\UserModel;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
 use Monolog\Level;
@@ -587,5 +589,36 @@ class UserController extends Controller
 
         // Stream PDF ke browser dengan nama file dinamis
         return $pdf->stream('Data User ' . date('Y-m-d H:i:s') . '.pdf');
+    }
+
+    public function updateProfilePhoto(Request $request)
+    {
+        // Validasi file yang diunggah
+        $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Maksimal 2MB
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            // Hapus foto lama jika ada
+            if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+                Storage::disk('public')->delete($user->foto);
+            }
+
+            // Simpan foto baru
+            $file = $request->file('foto');
+            $filename = 'profile_' . $user->user_id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('profile_photos', $filename, 'public');
+
+            // Update kolom foto di database
+            $user->foto = $path;
+            $user->save();
+
+            return redirect()->back()->with('success', 'Foto profil berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengunggah foto profil: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengunggah foto profil: ' . $e->getMessage());
+        }
     }
 }

@@ -120,12 +120,35 @@
             <a class="nav-link" data-toggle="dropdown" href="#">
                 <i class="far fa-user"></i>
                 <span class="ml-2">{{ Auth::user()->nama }}</span>
-                <img src="{{ asset('adminlte/dist/img/user2-160x160.jpg') }}" alt="User Avatar" class="img-size-32 img-circle ml-2">
+                <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : asset('adminlte/dist/img/user2-160x160.jpg') }}" alt="User Avatar" class="img-size-32 img-circle ml-2">
             </a>
             <div class="dropdown-menu dropdown-menu-right">
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-user mr-2"></i> Profil
-                </a>
+                <div class="dropdown-item">
+                    <div class="media">
+                        <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : asset('adminlte/dist/img/user2-160x160.jpg') }}" alt="User Avatar" class="img-size-50 img-circle mr-3">
+                        <div class="media-body">
+                            <h3 class="dropdown-item-title">
+                                {{ Auth::user()->nama }}
+                            </h3>
+                            <p class="text-sm">{{ Auth::user()->username }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item">
+                    <form action="{{ route('user.updateProfilePhoto') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="form-group">
+                            <label for="foto">Ubah Foto Profil</label>
+                            <input type="file" name="foto" id="foto" class="form-control form-control-sm" accept="image/*" onchange="previewImage(event)">
+                            <img id="foto-preview" src="#" alt="Preview" style="display: none; max-width: 100px; margin-top: 10px;">
+                            @error('foto')
+                            <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary btn-block">Unggah</button>
+                    </form>
+                </div>
                 <div class="dropdown-divider"></div>
                 <a href="{{ url('logout') }}" class="dropdown-item text-danger" onclick="event.preventDefault(); document.getElementById('logout-form-navbar').submit();">
                     <i class="fas fa-sign-out-alt mr-2"></i> Logout
@@ -147,3 +170,16 @@
         </li>
     </ul>
 </nav>
+
+<!-- Tambahkan script untuk preview gambar -->
+<script>
+    function previewImage(event) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            const output = document.getElementById('foto-preview');
+            output.src = reader.result;
+            output.style.display = 'block';
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+</script>
