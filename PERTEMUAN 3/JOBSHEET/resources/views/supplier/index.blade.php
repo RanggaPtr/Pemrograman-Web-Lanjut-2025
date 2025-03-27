@@ -5,6 +5,7 @@
     <div class="card-header">
         <h3 class="card-title">{{ $page->title }}</h3>
         <div class="card-tools">
+            <button onclick="modalAction('{{ url('/supplier/import') }}')" class="btn btn-sm btn-info mt-1">Import Supplier</button>
             <!-- Button to add a new supplier -->
             <a class="btn btn-sm btn-primary mt-1" href="{{ url('supplier/create') }}">Tambah</a>
             <button onclick="modalAction('{{ url('/supplier/create_ajax') }}')" class="btn btn-sm btn-success mt-1">Tambah Ajax</button>
@@ -14,10 +15,10 @@
     <div class="card-body">
         <!-- Display success or error messages from the session -->
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
         <!-- Filter Section -->
@@ -30,9 +31,9 @@
                         <select class="form-control" id="supplier_id" name="supplier_id" required>
                             <option value="">- Semua -</option>
                             @foreach($supplier as $item)
-                                <!-- 'level' now holds all supplier records (from your controller).
+                            <!-- 'level' now holds all supplier records (from your controller).
                                      Replace level_id/level_nama with the actual supplier fields. -->
-                                <option value="{{ $item->supplier_id }}">{{ $item->supplier_nama }}</option>
+                            <option value="{{ $item->supplier_id }}">{{ $item->supplier_nama }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -78,7 +79,7 @@
             // Enable server-side processing if your controller returns server-side data
             serverSide: true,
             ajax: {
-                url: "{{ url('supplier/list') }}",    // The route that returns JSON data
+                url: "{{ url('supplier/list') }}", // The route that returns JSON data
                 dataType: "json",
                 type: "POST",
                 data: function(d) {
@@ -86,8 +87,7 @@
                     d.supplier_id = $('#supplier_id').val();
                 }
             },
-            columns: [
-                {
+            columns: [{
                     // Display the supplier_id field
                     data: "supplier_id",
                     className: "text-center",

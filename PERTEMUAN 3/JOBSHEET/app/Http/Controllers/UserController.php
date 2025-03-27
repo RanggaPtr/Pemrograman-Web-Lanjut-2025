@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\UserModel;
 use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
 use Monolog\Level;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class UserController extends Controller
 {
@@ -373,5 +375,107 @@ class UserController extends Controller
                 'message' => 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
             ]);
         }
+    }
+
+    // Tambahan: Fitur impor dari kode program 2
+    public function import()
+    {
+        return view('user.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_user' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            try {
+                $file = $request->file('file_user');
+                $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true);
+
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati baris header
+                            // Validasi data sebelum insert
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C']) || empty($value['D'])) {
+                                throw new \Exception("Data pada baris $baris tidak lengkap.");
+                            }
+
+                            // Validasi level_id
+                            $kategori = LevelModel::find($value['A']);
+                            if (!$kategori) {
+                                throw new \Exception("Level dengan ID {$value['A']} pada baris $baris tidak ditemukan.");
+                            }
+
+                            // Validasi username unik
+                            if (UserModel::where('username', $value['B'])->exists()) {
+                                throw new \Exception("Username {$value['B']} pada baris $baris sudah ada.");
+                            }
+
+                            // Validasi level_id harus angka
+                            if (!is_numeric($value['A']) ) {
+                                throw new \Exception("Level ID pada baris $baris harus berupa angka.");
+                            }
+
+                            $insert[] = [
+                                'level_id' => $value['A'],
+                                'username' => $value['B'],
+                                'nama' => $value['C'],
+                                'password' => $value['D'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (count($insert) > 0) {
+                        $insertedCount = UserModel::insertOrIgnore($insert);
+                        if ($insertedCount === 0) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                            ]);
+                        }
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data berhasil diimport ($insertedCount baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        return redirect('/user');
     }
 }

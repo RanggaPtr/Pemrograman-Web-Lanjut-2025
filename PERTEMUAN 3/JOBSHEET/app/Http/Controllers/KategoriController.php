@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\KategoriModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Yajra\DataTables\Facades\DataTables;
 
 class KategoriController extends Controller
@@ -292,4 +293,99 @@ class KategoriController extends Controller
             ]);
         }
     }
+
+     // Tambahan: Fitur impor dari kode program 2
+     public function import()
+     {
+         return view('kategori.import');
+     }
+ 
+     public function import_ajax(Request $request)
+     {
+         if ($request->ajax() || $request->wantsJson()) {
+             $rules = [
+                 'file_kategori' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
+             ];
+ 
+             $validator = Validator::make($request->all(), $rules);
+             if ($validator->fails()) {
+                 return response()->json([
+                     'status' => false,
+                     'message' => 'Validasi Gagal',
+                     'msgField' => $validator->errors()
+                 ]);
+             }
+ 
+             try {
+                 $file = $request->file('file_kategori');
+                 $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
+                 $reader->setReadDataOnly(true);
+                 $spreadsheet = $reader->load($file->getRealPath());
+                 $sheet = $spreadsheet->getActiveSheet();
+                 $data = $sheet->toArray(null, false, true, true);
+ 
+                 $insert = [];
+                 if (count($data) > 1) {
+                     foreach ($data as $baris => $value) {
+                         if ($baris > 1) { // Lewati baris header
+                             // Validasi data sebelum insert
+                             if (empty($value['A']) || empty($value['B'])) {
+                                 throw new \Exception("Data pada baris $baris tidak lengkap.");
+                             }
+ 
+                             // Validasi kategori_id
+                            //  $kategori = KategoriModel::find($value['A']);
+                            //  if (!$kategori) {
+                            //      throw new \Exception("Kategori dengan ID {$value['A']} pada baris $baris tidak ditemukan.");
+                            //  }
+ 
+                             // Validasi kategori_kode unik
+                             if (KategoriModel::where('kategori_kode', $value['A'])->exists()) {
+                                 throw new \Exception("Kode kategori {$value['A']} pada baris $baris sudah ada.");
+                             }
+ 
+                             $insert[] = [
+                                 'kategori_kode' => $value['A'],
+                                 'kategori_nama' => $value['B'],
+                                 'created_at' => now(),
+                                 'updated_at' => now(),
+                             ];
+                         }
+                     }
+ 
+                     if (count($insert) > 0) {
+                         $insertedCount = KategoriModel::insertOrIgnore($insert);
+                         if ($insertedCount === 0) {
+                             return response()->json([
+                                 'status' => false,
+                                 'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                             ]);
+                         }
+ 
+                         return response()->json([
+                             'status' => true,
+                             'message' => "Data berhasil diimport ($insertedCount baris)"
+                         ]);
+                     } else {
+                         return response()->json([
+                             'status' => false,
+                             'message' => 'Tidak ada data yang diimport'
+                         ]);
+                     }
+                 } else {
+                     return response()->json([
+                         'status' => false,
+                         'message' => 'File Excel kosong atau tidak memiliki data'
+                     ]);
+                 }
+             } catch (\Exception $e) {
+                 \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                 return response()->json([
+                     'status' => false,
+                     'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                 ], 500);
+             }
+         }
+         return redirect('/kategori');
+     }
 }

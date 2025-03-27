@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SupplierModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Yajra\DataTables\Facades\DataTables;
 
 class SupplierController extends Controller
@@ -85,23 +86,23 @@ class SupplierController extends Controller
 
     // Store a new supplier
     public function store(Request $request)
-{
-    // Validasi tanpa supplier_id
-    $request->validate([
-        'supplier_kode'   => 'required|string|max:6',
-        'supplier_nama'   => 'required|string|max:50',
-        'supplier_alamat' => 'required|string|max:100'
-    ]);
+    {
+        // Validasi tanpa supplier_id
+        $request->validate([
+            'supplier_kode'   => 'required|string|max:6',
+            'supplier_nama'   => 'required|string|max:50',
+            'supplier_alamat' => 'required|string|max:100'
+        ]);
 
-    // Simpan data supplier tanpa mengirim supplier_id
-    SupplierModel::create([
-        'supplier_kode'   => $request->supplier_kode,
-        'supplier_nama'   => $request->supplier_nama,
-        'supplier_alamat' => $request->supplier_alamat
-    ]);
+        // Simpan data supplier tanpa mengirim supplier_id
+        SupplierModel::create([
+            'supplier_kode'   => $request->supplier_kode,
+            'supplier_nama'   => $request->supplier_nama,
+            'supplier_alamat' => $request->supplier_alamat
+        ]);
 
-    return redirect('/supplier')->with('success', 'Data supplier berhasil disimpan');
-}
+        return redirect('/supplier')->with('success', 'Data supplier berhasil disimpan');
+    }
 
 
     // Show details of a single supplier
@@ -168,30 +169,30 @@ class SupplierController extends Controller
 
     // Update an existing supplier
     public function update(Request $request, string $id)
-{
-    // Validasi tanpa supplier_id
-    $request->validate([
-        'supplier_kode'   => 'required|string|max:6|unique:m_supplier,supplier_kode,' . $id . ',supplier_id',
-        'supplier_nama'   => 'required|string|max:50',
-        'supplier_alamat' => 'required|string|max:100'
-    ]);
+    {
+        // Validasi tanpa supplier_id
+        $request->validate([
+            'supplier_kode'   => 'required|string|max:6|unique:m_supplier,supplier_kode,' . $id . ',supplier_id',
+            'supplier_nama'   => 'required|string|max:50',
+            'supplier_alamat' => 'required|string|max:100'
+        ]);
 
-    $supplier = SupplierModel::find($id);
-    if (!$supplier) {
-        return redirect('/supplier')->with('error', 'Data supplier tidak ditemukan');
+        $supplier = SupplierModel::find($id);
+        if (!$supplier) {
+            return redirect('/supplier')->with('error', 'Data supplier tidak ditemukan');
+        }
+
+        // Update data tanpa mengirim supplier_id
+        $supplier->update([
+            'supplier_kode'   => $request->supplier_kode,
+            'supplier_nama'   => $request->supplier_nama,
+            'supplier_alamat' => $request->supplier_alamat
+        ]);
+
+        return redirect('/supplier')->with('success', 'Data supplier berhasil diubah');
     }
 
-    // Update data tanpa mengirim supplier_id
-    $supplier->update([
-        'supplier_kode'   => $request->supplier_kode,
-        'supplier_nama'   => $request->supplier_nama,
-        'supplier_alamat' => $request->supplier_alamat
-    ]);
 
-    return redirect('/supplier')->with('success', 'Data supplier berhasil diubah');
-}
-
-    
 
     // Delete a supplier
     public function destroy(string $id)
@@ -222,9 +223,9 @@ class SupplierController extends Controller
         // cek apakah request berupa ajax
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-             'supplier_kode'   => 'required|string|min:3|unique:m_supplier,supplier_kode',
-             'supplier_nama'   => 'required|string|max:50',
-             'supplier_alamat' => 'required|string|max:100'
+                'supplier_kode'   => 'required|string|min:3|unique:m_supplier,supplier_kode',
+                'supplier_nama'   => 'required|string|max:50',
+                'supplier_alamat' => 'required|string|max:100'
             ];
 
             // use iluminate/support/Facades/Validator
@@ -262,7 +263,7 @@ class SupplierController extends Controller
                 // 'supplier_kode'   => 'required|string|min:3|unique:m_supplier,supplier_kode',
                 'supplier_nama'   => 'required|string|max:50',
                 'supplier_alamat' => 'required|string|max:100'
-               ];
+            ];
 
             $validator = Validator::make($request->all(), $rules);
 
@@ -300,7 +301,7 @@ class SupplierController extends Controller
         return view('supplier.confirm_ajax', ['supplier' => $supplier]);
     }
 
-    
+
     // public function delete_ajax menggunakan try catch
     public function delete_ajax(Request $request, $id)
     {
@@ -317,5 +318,101 @@ class SupplierController extends Controller
                 'message' => 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
             ]);
         }
+    }
+
+    // Tambahan: Fitur impor dari kode program 2
+    public function import()
+    {
+        return view('supplier.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_supplier' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            try {
+                $file = $request->file('file_supplier');
+                $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true);
+
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati baris header
+                            // Validasi data sebelum insert
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C']) ) {
+                                throw new \Exception("Data pada baris $baris tidak lengkap.");
+                            }
+
+                            // Validasi kategori_id
+                            // $kategori = KategoriModel::find($value['A']);
+                            // if (!$kategori) {
+                            //     throw new \Exception("Kategori dengan ID {$value['A']} pada baris $baris tidak ditemukan.");
+                            // }
+
+                            // Validasi supplier_kode unik
+                            if (SupplierModel::where('supplier_kode', $value['A'])->exists()) {
+                                throw new \Exception("Kode supplier {$value['B']} pada baris $baris sudah ada.");
+                            }
+                            
+                            $insert[] = [
+                                'supplier_kode' => $value['A'],
+                                'supplier_nama' => $value['B'],
+                                'supplier_alamat' => $value['C'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (count($insert) > 0) {
+                        $insertedCount = SupplierModel::insertOrIgnore($insert);
+                        if ($insertedCount === 0) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                            ]);
+                        }
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data berhasil diimport ($insertedCount baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        return redirect('/supplier');
     }
 }
