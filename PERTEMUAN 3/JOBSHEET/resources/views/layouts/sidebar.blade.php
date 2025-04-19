@@ -47,17 +47,25 @@
             </li>
             <li class="nav-header">Data Transaksi</li>
             <li class="nav-item">
-                <a href="{{ url('/stok') }}" class="nav-link {{ ($activeMenu == 'stok') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-cubes"></i>
-                    <p>Stok Barang</p>
-                </a>
+            <a href="{{ url('/stok') }}" class="nav-link {{ ($activeMenu == 'stok') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-cubes"></i>
+                <p>Stok Barang</p>
+            </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url('/barang') }}" class="nav-link {{ ($activeMenu == 'penjualan') ? 'active' : '' }}">
+                <a href="{{ url('/penjualan') }}" class="nav-link {{ ($activeMenu == 'penjualan') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-cash-register"></i>
                     <p>Transaksi Penjualan</p>
                 </a>
             </li>
+
+            <li class="nav-item">
+            <a href="{{ url('stok-total') }}" class="nav-link {{ $activeMenu == 'stok_total' ? 'active' : '' }}">            <i class="nav-icon fas fa-cubes"></i>
+                    <p>Stok Total Barang</p>
+                </a>
+            </li>
+            <!-- Menu Transaksi Penjualan akan ditambahkan di langkah berikutnya -->
+
             <li class="nav-header">Data Supplier</li>
             <li class="nav-item">
                 <a href="{{ url('/supplier') }}" class="nav-link {{ ($activeMenu == 'supplier') ? 'active' : '' }}">
