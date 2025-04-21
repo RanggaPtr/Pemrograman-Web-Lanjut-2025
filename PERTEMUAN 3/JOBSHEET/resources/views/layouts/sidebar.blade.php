@@ -59,11 +59,11 @@
                 </a>
             </li>
 
-            <li class="nav-item">
+            <!-- <li class="nav-item">
             <a href="{{ url('stok-total') }}" class="nav-link {{ $activeMenu == 'stok_total' ? 'active' : '' }}">            <i class="nav-icon fas fa-cubes"></i>
                     <p>Stok Total Barang</p>
                 </a>
-            </li>
+            </li> -->
             <!-- Menu Transaksi Penjualan akan ditambahkan di langkah berikutnya -->
 
             <li class="nav-header">Data Supplier</li>

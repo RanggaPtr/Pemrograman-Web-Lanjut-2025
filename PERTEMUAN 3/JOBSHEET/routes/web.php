@@ -55,6 +55,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua route di dalam group ini harus login dulu
 
         Route::get('/', [WelcomeController::class, 'index']);
+        Route::get('/dashboard', [WelcomeController::class, 'index']);
+        Route::post('/dashboard/stok_total_list', [WelcomeController::class, 'stokTotalList'])->name('dashboard.stok_total_list');
 
         Route::group(['prefix' => 'user'], function () {
             // route statis
