@@ -15,7 +15,7 @@
     </div>
 </div>
 @else
-<form action="{{ url('/stok/' . $stok->stok_id . '/delete_ajax') }}" method="POST" id="form-delete">
+<form action="{{ route('stok.delete_ajax', ['id' => $stok->stok_id]) }}" method="POST" id="form-delete">
     @csrf
     @method('DELETE')
     <div id="modal-master" class="modal-dialog modal-lg" role="document">
@@ -70,13 +70,29 @@
                     data: $(form).serialize(),
                     success: function(response) {
                         if (response.status) {
-                            $('#myModal').modal('hide');
+                            // Pastikan modal ditutup
+                            if ($('#myModal').hasClass('show')) {
+                                $('#myModal').modal('hide');
+                            }
+
+                            // Add a slight delay before removing backdrop elements
+                            setTimeout(function() {
+                                // Make sure backdrop is removed
+                                $('.modal-backdrop').remove();
+                                $('body').removeClass('modal-open');
+                                // Clear modal content
+                                $('#myModal').html('');
+                            }, 300);
+
+                            // Then show success notification
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil',
                                 text: response.message
+                            }).then(() => {
+                                // Refresh table after SweetAlert is closed
+                                dataStok.ajax.reload();
                             });
-                            dataStok.ajax.reload();
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -89,7 +105,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Terjadi Kesalahan',
-                            text: 'Gagal menghapus data. Silakan coba lagi.'
+                            text: 'Gagal menghapus data: ' + (xhr.responseJSON?.message || 'Silakan coba lagi.')
                         });
                     }
                 });

@@ -1,47 +1,60 @@
 @extends('layouts.template')
 
 @section('content')
-<div class="content-wrapper">
-    <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0">Edit Stok Barang</h1>
-                </div>
-            </div>
-        </div>
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title">{{ $page->title }}</h3>
+        <div class="card-tools"></div>
     </div>
-
-    <section class="content">
-        <div class="container-fluid">
-            <div class="card">
-                <div class="card-body">
-                    @if (session('error'))
-                        <div class="alert alert-danger">
-                            {{ session('error') }}
-                        </div>
-                    @endif
-
-                    <form action="{{ route('stok.update', $stokTotal->stok_total_id) }}" method="POST">
-                        @csrf
-                        @method('PUT')
-                        <div class="form-group">
-                            <label for="nama_barang">Nama Barang</label>
-                            <input type="text" class="form-control" value="{{ $stokTotal->barang->nama_barang }}" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="stok_total">Stok Total</label>
-                            <input type="number" name="stok_total" id="stok_total" class="form-control" value="{{ $stokTotal->stok_total }}" required min="0">
-                            @error('stok_total')
-                                <small class="text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
-                        <a href="{{ route('stok.index') }}" class="btn btn-secondary">Kembali</a>
-                    </form>
+    <div class="card-body">
+        <form method="POST" action="{{ url('stok/' . $stok->stok_id) }}" class="form-horizontal">
+            @csrf
+            @method('PUT')
+            <div class="form-group row">
+                <label class="col-1 control-label col-form-label">Supplier</label>
+                <div class="col-11">
+                    <select class="form-control" id="supplier_id" name="supplier_id" required>
+                        <option value="">- Pilih Supplier -</option>
+                        @foreach($suppliers as $supplier)
+                        <option value="{{ $supplier->supplier_id }}" {{ $stok->supplier_id == $supplier->supplier_id ? 'selected' : '' }}>{{ $supplier->supplier_nama }}</option>
+                        @endforeach
+                    </select>
+                    @error('supplier_id')
+                    <small class="form-text text-danger">{{ $message }}</small>
+                    @enderror
                 </div>
             </div>
-        </div>
-    </section>
+            <div class="form-group row">
+                <label class="col-1 control-label col-form-label">Barang</label>
+                <div class="col-11">
+                    <select class="form-control" id="barang_id" name="barang_id" required>
+                        <option value="">- Pilih Barang -</option>
+                        @foreach($barangs as $barang)
+                        <option value="{{ $barang->barang_id }}" {{ $stok->barang_id == $barang->barang_id ? 'selected' : '' }}>{{ $barang->barang_nama }}</option>
+                        @endforeach
+                    </select>
+                    @error('barang_id')
+                    <small class="form-text text-danger">{{ $message }}</small>
+                    @enderror
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-1 control-label col-form-label">Jumlah</label>
+                <div class="col-11">
+                    <input type="number" class="form-control" id="stok_jumlah" name="stok_jumlah" value="{{ $stok->stok_jumlah }}" required>
+                    @error('stok_jumlah')
+                    <small class="form-text text-danger">{{ $message }}</small>
+                    @enderror
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-1 control-label col-form-label"></label>
+                <div class="col-11">
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                    <a class="btn btn-sm btn-default ml-1" href="{{ url('stok') }}">Kembali</a>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 @endsection

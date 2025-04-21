@@ -38,29 +38,6 @@
                 </div>
             </div>
             <div class="form-group row">
-                <label class="col-1 control-label col-form-label">User</label>
-                <div class="col-11">
-                    <select class="form-control" id="user_id" name="user_id" required>
-                        <option value="">- Pilih User -</option>
-                        @foreach($users as $user)
-                        <option value="{{ $user->user_id }}">{{ $user->nama }}</option>
-                        @endforeach
-                    </select>
-                    @error('user_id')
-                    <small class="form-text text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-            </div>
-            <div class="form-group row">
-                <label class="col-1 control-label col-form-label">Tanggal</label>
-                <div class="col-11">
-                    <input type="datetime-local" class="form-control" id="stock_tanggal" name="stock_tanggal" value="{{ old('stock_tanggal') }}" required>
-                    @error('stock_tanggal')
-                    <small class="form-text text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-            </div>
-            <div class="form-group row">
                 <label class="col-1 control-label col-form-label">Jumlah</label>
                 <div class="col-11">
                     <input type="number" class="form-control" id="stok_jumlah" name="stok_jumlah" value="{{ old('stok_jumlah') }}" required>

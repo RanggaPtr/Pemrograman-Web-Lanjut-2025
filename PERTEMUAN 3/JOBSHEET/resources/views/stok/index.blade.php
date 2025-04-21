@@ -65,19 +65,41 @@
     </div>
 </div>
 
-<div id="myModal" class="modal fade animate shake" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" data-width="75%" aria-hidden="true"></div>
+<div id="myModal" class="modal fade animate shake" tabindex="-1" role="dialog" aria-hidden="true"></div>
 @endsection
 
 @push('js')
 <script>
     function modalAction(url = '') {
-        $('#myModal').load(url, function() {
-            $('#myModal').modal('show');
+        // Tutup modal sebelumnya
+        $('#myModal').modal('hide');
+        // Muat form baru
+        $('#myModal').load(url, function(response, status, xhr) {
+            if (status == "error") {
+                let errorMessage = xhr.responseJSON?.message || 'Gagal memuat form: ' + xhr.status + ' ' + xhr.statusText;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan',
+                    text: errorMessage
+                });
+            } else {
+                $('#myModal').modal('show');
+            }
         });
     }
 
     var dataStok;
     $(document).ready(function() {
+        // Tangani penutupan modal secara global
+        $('#myModal').on('hidden.bs.modal', function () {
+            // Add a slight delay to ensure Bootstrap animation completes
+            setTimeout(function() {
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
+                $('#myModal').html('');
+            }, 300);
+        });
+
         dataStok = $('#table_stok').DataTable({
             serverSide: true,
             ajax: {
@@ -91,6 +113,11 @@
                 },
                 error: function(xhr, error, thrown) {
                     console.log('Error:', xhr.responseText);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Terjadi Kesalahan',
+                        text: 'Gagal memuat data: ' + thrown
+                    });
                 }
             },
             columns: [

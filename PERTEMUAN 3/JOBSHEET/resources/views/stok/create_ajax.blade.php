@@ -1,4 +1,4 @@
-<form action="{{ url('/stok/ajax') }}" method="POST" id="form-tambah">
+<form action="{{ route('stok.store_ajax') }}" method="POST" id="form-create">
     @csrf
     <div id="modal-master" class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -7,6 +7,13 @@
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
             </div>
             <div class="modal-body">
+                @if($suppliers->isEmpty())
+                <div class="alert alert-warning">Data supplier tidak ditemukan. Silakan tambahkan supplier terlebih dahulu.</div>
+                @endif
+                @if($barangs->isEmpty())
+                <div class="alert alert-warning">Data barang tidak ditemukan. Silakan tambahkan barang terlebih dahulu.</div>
+                @endif
+                @if(!$suppliers->isEmpty() && !$barangs->isEmpty())
                 <div class="form-group">
                     <label>Supplier</label>
                     <select name="supplier_id" id="supplier_id" class="form-control" required>
@@ -28,41 +35,27 @@
                     <small id="error-barang_id" class="error-text form-text text-danger"></small>
                 </div>
                 <div class="form-group">
-                    <label>User</label>
-                    <select name="user_id" id="user_id" class="form-control" required>
-                        <option value="">- Pilih User -</option>
-                        @foreach($users as $user)
-                        <option value="{{ $user->user_id }}">{{ $user->nama }}</option>
-                        @endforeach
-                    </select>
-                    <small id="error-user_id" class="error-text form-text text-danger"></small>
-                </div>
-                <div class="form-group">
-                    <label>Tanggal</label>
-                    <input type="datetime-local" name="stock_tanggal" id="stock_tanggal" class="form-control" required>
-                    <small id="error-stock_tanggal" class="error-text form-text text-danger"></small>
-                </div>
-                <div class="form-group">
                     <label>Jumlah</label>
                     <input type="number" name="stok_jumlah" id="stok_jumlah" class="form-control" required>
                     <small id="error-stok_jumlah" class="error-text form-text text-danger"></small>
                 </div>
+                @endif
             </div>
             <div class="modal-footer">
-                <button type="button" data-dismiss="modal" class="btn btn-warning">Batal</button>
+                <button type="button" class="btn btn-warning" data-dismiss="modal">Batal</button>
+                @if(!$suppliers->isEmpty() && !$barangs->isEmpty())
                 <button type="submit" class="btn btn-primary">Simpan</button>
+                @endif
             </div>
         </div>
     </div>
 </form>
 <script>
     $(document).ready(function() {
-        $("#form-tambah").validate({
+        $("#form-create").validate({
             rules: {
                 supplier_id: { required: true, number: true },
                 barang_id: { required: true, number: true },
-                user_id: { required: true, number: true },
-                stock_tanggal: { required: true },
                 stok_jumlah: { required: true, number: true, min: 1 }
             },
             submitHandler: function(form) {
@@ -72,13 +65,29 @@
                     data: $(form).serialize(),
                     success: function(response) {
                         if (response.status) {
-                            $('#myModal').modal('hide');
+                            // Pastikan modal ditutup
+                            if ($('#myModal').hasClass('show')) {
+                                $('#myModal').modal('hide');
+                            }
+
+                            // Add a slight delay before removing backdrop elements
+                            setTimeout(function() {
+                                // Make sure backdrop is removed
+                                $('.modal-backdrop').remove();
+                                $('body').removeClass('modal-open');
+                                // Clear modal content
+                                $('#myModal').html('');
+                            }, 300);
+
+                            // Then show success notification
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil',
                                 text: response.message
+                            }).then(() => {
+                                // Refresh table after SweetAlert is closed
+                                dataStok.ajax.reload();
                             });
-                            dataStok.ajax.reload();
                         } else {
                             $('.error-text').text('');
                             $.each(response.msgField, function(prefix, val) {
@@ -95,7 +104,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Terjadi Kesalahan',
-                            text: 'Gagal menyimpan data. Silakan coba lagi.'
+                            text: 'Gagal menyimpan data: ' + (xhr.responseJSON?.message || 'Silakan coba lagi.')
                         });
                     }
                 });
