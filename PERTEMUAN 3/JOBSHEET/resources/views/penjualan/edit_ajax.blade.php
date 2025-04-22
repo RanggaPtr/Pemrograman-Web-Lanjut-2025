@@ -160,7 +160,7 @@
                 highlight: function(element) {
                     $(element).addClass('is-invalid');
                 },
-                unhighlight: function(element) {
+                unhighlight: function(element) {x`
                     $(element).removeClass('is-invalid');
                 }
             });

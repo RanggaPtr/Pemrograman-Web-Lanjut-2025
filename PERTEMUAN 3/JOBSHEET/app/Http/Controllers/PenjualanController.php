@@ -37,7 +37,7 @@ class PenjualanController extends Controller
 
     public function list(Request $request)
     {
-        $penjualans = PenjualanModel::select('penjualan_id', 'penjualan_kode', 'pembeli', 'penjualan_tanggal', 'user_id')
+        $penjualans = PenjualanModel::select('penjualan_id', 'penjualan_kode', 'pembeli', 'penjualan_tanggal', 'user_id', 'total_harga') // Tambahkan total_harga
             ->with('user');
 
         if ($request->user_id) {
@@ -148,8 +148,18 @@ class PenjualanController extends Controller
     public function create_ajax()
     {
         $users = UserModel::select('user_id', 'nama')->get();
-        $barangs = BarangModel::select('barang_id', 'barang_nama')->get();
-        return view('penjualan.create_ajax', ['users' => $users, 'barangs' => $barangs]);
+        $barangs = BarangModel::select('barang_id', 'barang_nama', 'harga_jual')->get();
+
+        // Generate kode penjualan otomatis (PJ001, PJ002, dst.)
+        $lastPenjualan = PenjualanModel::orderBy('penjualan_id', 'desc')->first();
+        $newNumber = $lastPenjualan ? (int) substr($lastPenjualan->penjualan_kode, 2) + 1 : 1;
+        $penjualan_kode = 'PJ' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+
+        return view('penjualan.create_ajax', [
+            'users' => $users,
+            'barangs' => $barangs,
+            'penjualan_kode' => $penjualan_kode
+        ]);
     }
 
     public function store_ajax(Request $request)
@@ -162,7 +172,7 @@ class PenjualanController extends Controller
                 'penjualan_tanggal' => 'required|date',
                 'details' => 'required|array|min:1',
                 'details.*.barang_id' => 'required|integer|exists:m_barang,barang_id',
-                'details.*.harga' => 'required|integer|min:1',
+                'details.*.harga' => 'required|numeric|min:1', // Ubah dari integer ke numeric
                 'details.*.jumlah' => 'required|integer|min:1',
             ];
 
@@ -177,13 +187,22 @@ class PenjualanController extends Controller
             }
 
             try {
+                // Hitung total_harga
+                $totalHarga = 0;
+                foreach ($request->details as $detail) {
+                    $totalHarga += $detail['harga'] * $detail['jumlah'];
+                }
+
+                // Simpan penjualan
                 $penjualan = PenjualanModel::create([
                     'user_id' => $request->user_id,
                     'pembeli' => $request->pembeli,
                     'penjualan_kode' => $request->penjualan_kode,
                     'penjualan_tanggal' => $request->penjualan_tanggal,
+                    'total_harga' => $totalHarga,
                 ]);
 
+                // Simpan detail penjualan
                 foreach ($request->details as $detail) {
                     PenjualanDetailModel::create([
                         'penjualan_id' => $penjualan->penjualan_id,

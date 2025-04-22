@@ -19,4 +19,4 @@ class AddTotalHargaToTPenjualanTable extends Migration
             $table->dropColumn('total_harga');
         });
     }
-}
+}   

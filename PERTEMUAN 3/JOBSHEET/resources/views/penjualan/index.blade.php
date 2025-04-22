@@ -75,28 +75,49 @@
                     console.log('Error:', xhr.responseText);
                 }
             },
-            columns: [
-                { data: "DT_RowIndex", className: "text-center", orderable: false, searchable: false },
-                { data: "penjualan_kode", orderable: true, searchable: true },
-                { data: "pembeli", orderable: true, searchable: true },
-                { data: "penjualan_tanggal", orderable: true, searchable: true },
-                { 
-                    data: "user.nama", 
-                    orderable: false, 
+            columns: [{
+                    data: "DT_RowIndex",
+                    className: "text-center",
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: "penjualan_kode",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "pembeli",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "penjualan_tanggal",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "user.nama",
+                    orderable: false,
                     searchable: false,
                     render: function(data, type, row) {
                         return data ? data : 'N/A';
                     }
                 },
-                { 
-                    data: "total_harga", 
-                    orderable: true, 
+                {
+                    data: "total_harga",
+                    orderable: true,
                     searchable: false,
                     render: function(data, type, row) {
+                        console.log('total_harga:', data); // Debug nilai
                         return data ? 'Rp ' + new Intl.NumberFormat('id-ID').format(data) : 'Rp 0';
                     }
                 },
-                { data: "aksi", orderable: false, searchable: false }
+                {
+                    data: "aksi",
+                    orderable: false,
+                    searchable: false
+                }
             ]
         });
 

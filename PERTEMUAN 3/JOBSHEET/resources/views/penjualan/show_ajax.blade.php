@@ -61,11 +61,13 @@
                     @endforeach
                 </tbody>
             </table>
-            
-                            <tr>
-                                <th>Total Harga</th>
-                                <td>Rp {{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
-                            </tr>
+
+            <tr style="font-size: large;">
+                <b>
+                    <th>Total Harga</th>
+                    <td>Rp {{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
+                </b>
+            </tr>
 
         </div>
         <div class="modal-footer">
