@@ -210,8 +210,9 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{id}/update_ajax', [PenjualanController::class, 'update_ajax'])->name('update_ajax');
             Route::get('/{id}/delete_ajax', [PenjualanController::class, 'confirm_ajax'])->name('delete_ajax');
             Route::delete('/{id}/delete_ajax', [PenjualanController::class, 'delete_ajax'])->name('delete_ajax');
-            Route::get('/{id}/details', [PenjualanController::class, 'getDetails'])->name('details');
-
+            Route::get('/{id}/show', [PenjualanController::class, 'show'])->name('show');
+            Route::get('/{id}/show_ajax', [PenjualanController::class, 'show_ajax'])->name('show_ajax');
+            
             Route::resource('/', PenjualanController::class, [
                 'parameters' => ['' => 'id'],
                 'as' => ''

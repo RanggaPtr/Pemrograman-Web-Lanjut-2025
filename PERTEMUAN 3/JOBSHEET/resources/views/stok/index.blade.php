@@ -5,7 +5,7 @@
     <div class="card-header">
         <h3 class="card-title">{{ $page->title }}</h3>
         <div class="card-tools">
-            <a class="btn btn-sm btn-primary mt-1" href="{{ url('stok/create') }}">Tambah</a>
+            <!-- <a class="btn btn-sm btn-primary mt-1" href="{{ url('stok/create') }}">Tambah</a> -->
             <button onclick="modalAction('{{ url('/stok/create_ajax') }}')" class="btn btn-sm btn-success mt-1">Tambah Ajax</button>
         </div>
     </div>
@@ -71,9 +71,33 @@
 @push('js')
 <script>
     function modalAction(url = '') {
-        // Tutup modal sebelumnya
-        $('#myModal').modal('hide');
-        // Muat form baru
+        // Tutup modal sebelumnya dan pastikan semua elemen modal dibersihkan
+        if ($('#myModal').hasClass('show')) {
+            $('#myModal').modal('hide');
+
+            // Tunggu hingga modal benar-benar tertutup
+            $('#myModal').on('hidden.bs.modal', function(e) {
+                // Hapus event listener setelah digunakan
+                $('#myModal').off('hidden.bs.modal');
+
+                // Bersihkan modal
+                $('#myModal').html('');
+
+                // Pastikan backdrop dihapus
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
+
+                // Kemudian muat form baru
+                loadNewForm(url);
+            });
+        } else {
+            // Jika tidak ada modal yang sedang ditampilkan, langsung muat form baru
+            loadNewForm(url);
+        }
+    }
+
+    // Function untuk memuat form baru
+    function loadNewForm(url) {
         $('#myModal').load(url, function(response, status, xhr) {
             if (status == "error") {
                 let errorMessage = xhr.responseJSON?.message || 'Gagal memuat form: ' + xhr.status + ' ' + xhr.statusText;
@@ -91,7 +115,7 @@
     var dataStok;
     $(document).ready(function() {
         // Tangani penutupan modal secara global
-        $('#myModal').on('hidden.bs.modal', function () {
+        $('#myModal').on('hidden.bs.modal', function() {
             // Add a slight delay to ensure Bootstrap animation completes
             setTimeout(function() {
                 $('.modal-backdrop').remove();
@@ -120,35 +144,51 @@
                     });
                 }
             },
-            columns: [
-                { data: "DT_RowIndex", className: "text-center", orderable: false, searchable: false },
-                { 
-                    data: "supplier.supplier_nama", 
-                    orderable: true, 
+            columns: [{
+                    data: "DT_RowIndex",
+                    className: "text-center",
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: "supplier.supplier_nama",
+                    orderable: true,
                     searchable: true,
                     render: function(data, type, row) {
                         return data ? data : 'N/A';
                     }
                 },
-                { 
-                    data: "barang.barang_nama", 
-                    orderable: true, 
+                {
+                    data: "barang.barang_nama",
+                    orderable: true,
                     searchable: true,
                     render: function(data, type, row) {
                         return data ? data : 'N/A';
                     }
                 },
-                { 
-                    data: "user.nama", 
-                    orderable: true, 
+                {
+                    data: "user.nama",
+                    orderable: true,
                     searchable: true,
                     render: function(data, type, row) {
                         return data ? data : 'N/A';
                     }
                 },
-                { data: "stock_tanggal", orderable: true, searchable: true },
-                { data: "stok_jumlah", orderable: true, searchable: true },
-                { data: "aksi", orderable: false, searchable: false }
+                {
+                    data: "stock_tanggal",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "stok_jumlah",
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: "aksi",
+                    orderable: false,
+                    searchable: false
+                }
             ]
         });
 

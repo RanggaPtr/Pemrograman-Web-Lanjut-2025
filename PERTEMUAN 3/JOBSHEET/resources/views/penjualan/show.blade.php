@@ -30,6 +30,10 @@
                 <th>User</th>
                 <td>{{ $penjualan->user->nama }}</td>
             </tr>
+            <tr>
+                <th>Total Harga</th>
+                <td>Rp {{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
+            </tr>
         </table>
         <h5>Detail Barang</h5>
         <table class="table table-bordered table-striped table-hover table-sm">
@@ -45,9 +49,9 @@
                 @foreach($penjualan->details as $detail)
                 <tr>
                     <td>{{ $detail->barang->barang_nama }}</td>
-                    <td>{{ number_format($detail->harga, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
                     <td>{{ $detail->jumlah }}</td>
-                    <td>{{ number_format($detail->harga * $detail->jumlah, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($detail->harga * $detail->jumlah, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>

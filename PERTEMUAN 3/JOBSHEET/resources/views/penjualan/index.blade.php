@@ -5,7 +5,7 @@
     <div class="card-header">
         <h3 class="card-title">{{ $page->title }}</h3>
         <div class="card-tools">
-            <a class="btn btn-sm btn-primary mt-1" href="{{ url('penjualan/create') }}">Tambah</a>
+            <!-- <a class="btn btn-sm btn-primary mt-1" href="{{ url('penjualan/create') }}">Tambah</a> -->
             <button onclick="modalAction('{{ url('/penjualan/create_ajax') }}')" class="btn btn-sm btn-success mt-1">Tambah Ajax</button>
         </div>
     </div>
@@ -41,6 +41,7 @@
                     <th>Pembeli</th>
                     <th>Tanggal</th>
                     <th>User</th>
+                    <th>Total Harga</th> <!-- Tambah kolom total harga -->
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -71,7 +72,7 @@
                     d.user_id = $('#user_id').val();
                 },
                 error: function(xhr, error, thrown) {
-                    console.log('Error:', xhr.responseText); // Tambahkan debugging
+                    console.log('Error:', xhr.responseText);
                 }
             },
             columns: [
@@ -84,7 +85,15 @@
                     orderable: false, 
                     searchable: false,
                     render: function(data, type, row) {
-                        return data ? data : 'N/A'; // Jika user.nama tidak ada, tampilkan 'N/A'
+                        return data ? data : 'N/A';
+                    }
+                },
+                { 
+                    data: "total_harga", 
+                    orderable: true, 
+                    searchable: false,
+                    render: function(data, type, row) {
+                        return data ? 'Rp ' + new Intl.NumberFormat('id-ID').format(data) : 'Rp 0';
                     }
                 },
                 { data: "aksi", orderable: false, searchable: false }

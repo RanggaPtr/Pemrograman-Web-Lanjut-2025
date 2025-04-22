@@ -9,12 +9,8 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>User</label>
-                    <select name="user_id" id="user_id" class="form-control" required>
-                        <option value="">- Pilih User -</option>
-                        @foreach($users as $user)
-                        <option value="{{ $user->user_id }}">{{ $user->nama }}</option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="user_id" id="user_id" value="{{ auth()->user()->user_id }}">
+                    <input type="text" class="form-control" value="{{ auth()->user()->nama }}" readonly>
                     <small id="error-user_id" class="error-text form-text text-danger"></small>
                 </div>
                 <div class="form-group">
@@ -29,7 +25,7 @@
                 </div>
                 <div class="form-group">
                     <label>Tanggal</label>
-                    <input type="datetime-local" name="penjualan_tanggal" id="penjualan_tanggal" class="form-control" required>
+                    <input type="datetime-local" name="penjualan_tanggal" id="penjualan_tanggal" class="form-control" readonly>
                     <small id="error-penjualan_tanggal" class="error-text form-text text-danger"></small>
                 </div>
                 <div class="form-group">
@@ -40,12 +36,18 @@
                                 <th>Barang</th>
                                 <th>Harga</th>
                                 <th>Jumlah</th>
+                                <th>Total</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                     <button type="button" class="btn btn-sm btn-primary" onclick="addDetailRow()">Tambah Barang</button>
+                </div>
+                <div class="form-group">
+                    <label>Total Harga</label>
+                    <input type="text" id="total_harga" class="form-control" readonly>
+                    <input type="hidden" name="total_harga" id="total_harga_hidden">
                 </div>
             </div>
             <div class="modal-footer">
@@ -62,23 +64,54 @@
         var row = `
             <tr>
                 <td>
-                    <select class="form-control" name="details[][barang_id]" required>
+                    <select class="form-control barang-select" name="details[][barang_id]" onchange="updateHarga(this)" required>
                         <option value="">- Pilih Barang -</option>
-                        ${barangs.map(b => `<option value="${b.barang_id}">${b.barang_nama}</option>`).join('')}
+                        ${barangs.map(b => `<option value="${b.barang_id}" data-harga="${b.harga}">${b.barang_nama}</option>`).join('')}
                     </select>
                 </td>
-                <td><input type="number" class="form-control" name="details[][harga]" required></td>
-                <td><input type="number" class="form-control" name="details[][jumlah]" required></td>
+                <td><input type="number" class="form-control harga" name="details[][harga]" readonly></td>
+                <td><input type="number" class="form-control jumlah" name="details[][jumlah]" oninput="updateTotal(this)" required></td>
+                <td><input type="text" class="form-control total" readonly></td>
                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeDetailRow(this)">Hapus</button></td>
             </tr>`;
         $('#detailTable tbody').append(row);
     }
 
+    function updateHarga(select) {
+        var harga = $(select).find('option:selected').data('harga') || 0;
+        var row = $(select).closest('tr');
+        row.find('.harga').val(harga);
+        updateTotal(row.find('.jumlah')[0]);
+    }
+
+    function updateTotal(input) {
+        var row = $(input).closest('tr');
+        var harga = parseFloat(row.find('.harga').val()) || 0;
+        var jumlah = parseInt(row.find('.jumlah').val()) || 0;
+        var total = harga * jumlah;
+        row.find('.total').val(total.toLocaleString('id-ID'));
+
+        // Hitung total keseluruhan
+        var totalHarga = 0;
+        $('#detailTable tbody tr').each(function() {
+            var rowTotal = parseFloat($(this).find('.total').val().replace(/\./g, '')) || 0;
+            totalHarga += rowTotal;
+        });
+        $('#total_harga').val('Rp ' + totalHarga.toLocaleString('id-ID'));
+        $('#total_harga_hidden').val(totalHarga);
+    }
+
     function removeDetailRow(btn) {
         $(btn).closest('tr').remove();
+        updateTotal($('.jumlah')[0]); // Perbarui total harga setelah hapus
     }
 
     $(document).ready(function() {
+        // Set tanggal otomatis ke waktu saat ini
+        var now = new Date();
+        var formattedDate = now.toISOString().slice(0, 16);
+        $('#penjualan_tanggal').val(formattedDate);
+
         addDetailRow();
         $("#form-tambah").validate({
             rules: {

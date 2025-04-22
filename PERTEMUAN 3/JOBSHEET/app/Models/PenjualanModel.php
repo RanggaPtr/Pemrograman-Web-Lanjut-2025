@@ -17,11 +17,16 @@ class PenjualanModel extends Model
         'pembeli',
         'penjualan_kode',
         'penjualan_tanggal',
+        'total_harga', // Tambahkan kolom untuk total harga
+    ];
+
+    protected $casts = [
+        'penjualan_tanggal' => 'datetime',
     ];
 
     public function user()
     {
-        return $this->belongsTo(UserModel::class, 'user_id', 'user_id'); // Diperbaiki: Gunakan UserModel
+        return $this->belongsTo(UserModel::class, 'user_id', 'user_id');
     }
 
     public function details()

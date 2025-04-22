@@ -23,7 +23,6 @@ class PenjualanDetailModel extends Model
     {
         parent::boot();
 
-        // Saat detail penjualan ditambahkan
         static::created(function ($detail) {
             $stokTotal = StokTotalModel::where('barang_id', $detail->barang_id)->first();
             if ($stokTotal) {
@@ -32,12 +31,18 @@ class PenjualanDetailModel extends Model
                     throw new \Exception('Stok barang ' . $detail->barang->barang_nama . ' tidak cukup untuk transaksi ini.');
                 }
                 $stokTotal->save();
+
+                // Update total harga pada penjualan
+                $penjualan = $detail->penjualan;
+                $penjualan->total_harga = $penjualan->details->sum(function ($detail) {
+                    return $detail->harga * $detail->jumlah;
+                });
+                $penjualan->save();
             } else {
                 throw new \Exception('Stok barang ' . $detail->barang->barang_nama . ' belum tersedia di stok total.');
             }
         });
 
-        // Saat detail penjualan diupdate
         static::updated(function ($detail) {
             $stokTotal = StokTotalModel::where('barang_id', $detail->barang_id)->first();
             if ($stokTotal) {
@@ -47,15 +52,28 @@ class PenjualanDetailModel extends Model
                     throw new \Exception('Stok barang ' . $detail->barang->barang_nama . ' tidak cukup untuk transaksi ini.');
                 }
                 $stokTotal->save();
+
+                // Update total harga pada penjualan
+                $penjualan = $detail->penjualan;
+                $penjualan->total_harga = $penjualan->details->sum(function ($detail) {
+                    return $detail->harga * $detail->jumlah;
+                });
+                $penjualan->save();
             }
         });
 
-        // Saat detail penjualan dihapus
         static::deleted(function ($detail) {
             $stokTotal = StokTotalModel::where('barang_id', $detail->barang_id)->first();
             if ($stokTotal) {
                 $stokTotal->stok_jumlah += $detail->jumlah;
                 $stokTotal->save();
+
+                // Update total harga pada penjualan
+                $penjualan = $detail->penjualan;
+                $penjualan->total_harga = $penjualan->details->sum(function ($detail) {
+                    return $detail->harga * $detail->jumlah;
+                });
+                $penjualan->save();
             }
         });
     }

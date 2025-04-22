@@ -10,7 +10,16 @@
         Selamat datang semua, ini adalah halaman utama dari aplikasi ini.
     </div>
 </div>
-
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Omset Kotor Penjualan</h3>
+    </div>
+    <div class="card-body">
+        <div class="row" id="omset_kotor_container">
+            <!-- Card akan dimuat secara dinamis melalui JavaScript -->
+        </div>
+    </div>
+</div>
 <div class="card card-outline card-primary">
     <div class="card-header">
         <h3 class="card-title">Stok Barang Real Time</h3>

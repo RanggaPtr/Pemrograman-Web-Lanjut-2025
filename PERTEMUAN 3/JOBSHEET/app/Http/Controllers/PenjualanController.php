@@ -47,7 +47,7 @@ class PenjualanController extends Controller
         return DataTables::of($penjualans)
             ->addIndexColumn()
             ->addColumn('aksi', function ($penjualan) {
-                $btn = '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id . '/show') . '\')" class="btn btn-info btn-sm">Detail</a> ';
+                $btn = '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id . '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</a> ';
                 $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</a> ';
                 $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</a>';
                 return $btn;
@@ -137,6 +137,12 @@ class PenjualanController extends Controller
             'penjualan' => $penjualan,
             'activeMenu' => $activeMenu
         ]);
+    }
+
+    public function show_ajax(string $id)
+    {
+        $penjualan = PenjualanModel::with(['user', 'details.barang'])->find($id);
+        return view('penjualan.show_ajax', ['penjualan' => $penjualan]);
     }
 
     public function create_ajax()
