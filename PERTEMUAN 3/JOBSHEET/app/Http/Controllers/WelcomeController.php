@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PenjualanModel;
 use App\Models\StokModel;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
@@ -38,5 +39,24 @@ class WelcomeController extends Controller
             })
             ->rawColumns(['barang_nama', 'total_stok'])
             ->make(true);
+    }
+
+    public function omsetKotor(Request $request)
+    {
+        // Ambil total omset kotor (sum total harga dari semua transaksi)
+        $totalOmset = PenjualanModel::sum('total_harga');
+
+        // Format total omset ke dalam format Rupiah
+        $formattedOmset =  number_format($totalOmset ?? 0, 2, ',', '.');
+
+        // Format data untuk response JSON
+        $data = [
+            [
+                'title' => 'Total Omset Kotor',
+                'amount' => $formattedOmset, // Mengembalikan nilai yang sudah diformat
+            ]
+        ];
+
+        return response()->json(['data' => $data]);
     }
 }

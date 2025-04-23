@@ -35,30 +35,30 @@
 @push('css')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    .stok-card {
+    .stok-card, .omset-card {
         transition: transform 0.3s ease;
         border: none;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
-    .stok-card:hover {
+    .stok-card:hover, .omset-card:hover {
         transform: translateY(-5px);
     }
-    .stok-card .card-body {
+    .stok-card .card-body, .omset-card .card-body {
         text-align: center;
     }
-    .stok-card .card-title {
+    .stok-card .card-title, .omset-card .card-title {
         font-size: 1.2rem;
         font-weight: bold;
         color: #333;
         margin-bottom: 0.5rem;
     }
-    .stok-card .card-text {
+    .stok-card .card-text, .omset-card .card-text {
         font-size: 1.5rem;
         color: #007bff;
     }
-    .stok-card .card-icon {
+    .stok-card .card-icon, .omset-card .card-icon {
         font-size: 2rem;
         color: #007bff;
         margin-bottom: 0.5rem;
@@ -69,6 +69,48 @@
 @push('js')
 <script>
     $(document).ready(function() {
+        // Fungsi untuk memuat data omset kotor dalam bentuk card
+        function loadOmsetKotor() {
+            $.ajax({
+                url: "{{ url('dashboard/omset_kotor') }}",
+                dataType: "json",
+                type: "POST",
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    const data = response.data;
+                    let html = '';
+                    if (data.length === 0) {
+                        html = '<div class="col-12 text-center"><p>Tidak ada data omset kotor yang tersedia.</p></div>';
+                    } else {
+                        data.forEach(item => {
+                            html += `
+                                <div class="col-md-3 col-sm-6 mb-4">
+                                    <div class="card omset-card">
+                                        <div class="card-body">
+                                            <i class="fas fa-money-bill-wave card-icon"></i>
+                                            <h5 class="card-title">${item.title || 'N/A'}</h5>
+                                            <p class="card-text">Rp ${item.amount.toLocaleString('id-ID')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    $('#omset_kotor_container').html(html);
+                },
+                error: function(xhr, error, thrown) {
+                    console.log('Error:', xhr.responseText);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Terjadi Kesalahan',
+                        text: 'Gagal memuat data omset: ' + thrown
+                    });
+                }
+            });
+        }
+
         // Fungsi untuk memuat data stok dalam bentuk card
         function loadStokTotal() {
             $.ajax({
@@ -105,13 +147,14 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Terjadi Kesalahan',
-                        text: 'Gagal memuat data: ' + thrown
+                        text: 'Gagal memuat data stok: ' + thrown
                     });
                 }
             });
         }
 
         // Panggil fungsi untuk memuat data saat halaman dimuat
+        loadOmsetKotor();
         loadStokTotal();
     });
 </script>
