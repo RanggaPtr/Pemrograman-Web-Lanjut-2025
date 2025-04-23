@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class StokController extends Controller
 {
@@ -59,7 +61,6 @@ class StokController extends Controller
         return DataTables::of($stoks)
             ->addIndexColumn()
             ->addColumn('aksi', function ($stok) {
-                // $btn = '<a href="' . url('/stok/' . $stok->stok_id . '/edit') . '" class="btn btn-warning btn-sm">Edit</a> ';
                 $btn = '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/stok/' . $stok->stok_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit Ajax</a> ';
                 $btn .= '<a href="javascript:void(0)" onclick="modalAction(\'' . url('/stok/' . $stok->stok_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</a>';
                 return $btn;
@@ -100,15 +101,22 @@ class StokController extends Controller
             'stok_jumlah' => 'required|integer|min:1',
         ]);
 
-        StokModel::create([
-            'supplier_id' => $request->supplier_id,
-            'barang_id' => $request->barang_id,
-            'user_id' => Auth::user()->user_id,
-            'stock_tanggal' => now(),
-            'stok_jumlah' => $request->stok_jumlah,
-        ]);
+        try {
+            $stok = StokModel::create([
+                'supplier_id' => $request->supplier_id,
+                'barang_id' => $request->barang_id,
+                'user_id' => Auth::user()->user_id,
+                'stock_tanggal' => now(),
+                'stok_jumlah' => $request->stok_jumlah,
+            ]);
 
-        return redirect('/stok')->with('success', 'Data stok berhasil disimpan');
+            Log::info('Stok ditambahkan (store): barang_id=' . $request->barang_id . ', stok_jumlah=' . $request->stok_jumlah);
+
+            return redirect('/stok')->with('success', 'Data stok berhasil disimpan');
+        } catch (\Exception $e) {
+            Log::error('Gagal menyimpan stok (store): ' . $e->getMessage());
+            return redirect('/stok')->with('error', 'Gagal menyimpan stok: ' . $e->getMessage());
+        }
     }
 
     public function edit(string $id)
@@ -149,17 +157,24 @@ class StokController extends Controller
             'stok_jumlah' => 'required|integer|min:1',
         ]);
 
-        $stok = StokModel::find($id);
-        if ($stok) {
-            $stok->update([
-                'supplier_id' => $request->supplier_id,
-                'barang_id' => $request->barang_id,
-                'stock_tanggal' => now(), // Update tanggal menjadi terbaru
-                'stok_jumlah' => $request->stok_jumlah,
-            ]);
-            return redirect('/stok')->with('success', 'Data stok berhasil diupdate');
-        } else {
+        try {
+            $stok = StokModel::find($id);
+            if ($stok) {
+                $stok->update([
+                    'supplier_id' => $request->supplier_id,
+                    'barang_id' => $request->barang_id,
+                    'stock_tanggal' => now(),
+                    'stok_jumlah' => $request->stok_jumlah,
+                ]);
+
+                Log::info('Stok diperbarui (update): barang_id=' . $request->barang_id . ', stok_jumlah=' . $request->stok_jumlah);
+
+                return redirect('/stok')->with('success', 'Data stok berhasil diupdate');
+            }
             return redirect('/stok')->with('error', 'Data stok tidak ditemukan');
+        } catch (\Exception $e) {
+            Log::error('Gagal memperbarui stok (update): ' . $e->getMessage());
+            return redirect('/stok')->with('error', 'Gagal memperbarui stok: ' . $e->getMessage());
         }
     }
 
@@ -208,7 +223,7 @@ class StokController extends Controller
             }
 
             try {
-                StokModel::create([
+                $stok = StokModel::create([
                     'supplier_id' => $request->supplier_id,
                     'barang_id' => $request->barang_id,
                     'user_id' => Auth::user()->user_id,
@@ -216,11 +231,14 @@ class StokController extends Controller
                     'stok_jumlah' => $request->stok_jumlah,
                 ]);
 
+                Log::info('Stok ditambahkan (store_ajax): barang_id=' . $request->barang_id . ', stok_jumlah=' . $request->stok_jumlah);
+
                 return response()->json([
                     'status' => true,
                     'message' => 'Data stok berhasil disimpan'
                 ]);
             } catch (\Exception $e) {
+                Log::error('Gagal menyimpan stok (store_ajax): ' . $e->getMessage());
                 return response()->json([
                     'status' => false,
                     'message' => 'Gagal menyimpan data: ' . $e->getMessage()
@@ -268,23 +286,33 @@ class StokController extends Controller
                 ]);
             }
 
-            $stok = StokModel::find($id);
-            if ($stok) {
-                $stok->update([
-                    'supplier_id' => $request->supplier_id,
-                    'barang_id' => $request->barang_id,
-                    'stock_tanggal' => now(), // Update tanggal menjadi terbaru
-                    'stok_jumlah' => $request->stok_jumlah,
-                ]);
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data stok berhasil diupdate'
-                ]);
-            } else {
+            try {
+                $stok = StokModel::find($id);
+                if ($stok) {
+                    $stok->update([
+                        'supplier_id' => $request->supplier_id,
+                        'barang_id' => $request->barang_id,
+                        'stock_tanggal' => now(),
+                        'stok_jumlah' => $request->stok_jumlah,
+                    ]);
+
+                    Log::info('Stok diperbarui (update_ajax): barang_id=' . $request->barang_id . ', stok_jumlah=' . $request->stok_jumlah);
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Data stok berhasil diupdate'
+                    ]);
+                }
                 return response()->json([
                     'status' => false,
                     'message' => 'Data tidak ditemukan'
                 ]);
+            } catch (\Exception $e) {
+                Log::error('Gagal memperbarui stok (update_ajax): ' . $e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal memperbarui stok: ' . $e->getMessage()
+                ], 500);
             }
         }
         return redirect('/');
@@ -297,44 +325,65 @@ class StokController extends Controller
     }
 
     public function delete_ajax(Request $request, $id)
-{
-    if ($request->ajax() || $request->wantsJson()) {
-        try {
-            $stok = StokModel::find($id);
-            if ($stok) {
-                $stok->delete();
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data stok berhasil dihapus'
-                ]);
-            } else {
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            try {
+                $stok = StokModel::find($id);
+                if ($stok) {
+                    $barangId = $stok->barang_id;
+                    $stokJumlah = $stok->stok_jumlah;
+
+                    $stok->delete();
+
+                    Log::info('Stok dihapus (delete_ajax): barang_id=' . $barangId . ', stok_jumlah=' . $stokJumlah);
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Data stok berhasil dihapus'
+                    ]);
+                }
                 return response()->json([
                     'status' => false,
                     'message' => 'Data tidak ditemukan'
                 ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                Log::error('Gagal menghapus stok (delete_ajax): ' . $e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Gagal menghapus stok (delete_ajax): ' . $e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal menghapus stok: ' . $e->getMessage()
+                ], 500);
             }
-        } catch (\Illuminate\Database\QueryException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait'
-            ]);
         }
+        return redirect('/');
     }
-    return redirect('/');
-}
 
     public function destroy($id)
     {
-        $stok = StokModel::find($id);
-        if ($stok) {
-            try {
+        try {
+            $stok = StokModel::find($id);
+            if ($stok) {
+                $barangId = $stok->barang_id;
+                $stokJumlah = $stok->stok_jumlah;
+
                 $stok->delete();
+
+                Log::info('Stok dihapus (destroy): barang_id=' . $barangId . ', stok_jumlah=' . $stokJumlah);
+
                 return redirect('/stok')->with('success', 'Data stok berhasil dihapus');
-            } catch (\Illuminate\Database\QueryException $e) {
-                return redirect('/stok')->with('error', 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait');
             }
-        } else {
             return redirect('/stok')->with('error', 'Data stok tidak ditemukan');
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Gagal menghapus stok (destroy): ' . $e->getMessage());
+            return redirect('/stok')->with('error', 'Data tidak dapat dihapus karena masih terdapat tabel lain yang terkait');
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus stok (destroy): ' . $e->getMessage());
+            return redirect('/stok')->with('error', 'Gagal menghapus stok: ' . $e->getMessage());
         }
     }
 }

@@ -201,16 +201,16 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('penjualan')->name('penjualan.')->group(function () {
             Route::post('/list', [PenjualanController::class, 'list'])->name('list');
             Route::get('/create_ajax', [PenjualanController::class, 'create_ajax'])->name('create_ajax');
-            Route::post('/ajax', [PenjualanController::class, 'store_ajax'])->name('store_ajax');
+            Route::post('/store_ajax', [PenjualanController::class, 'store_ajax'])->name('store_ajax');
             Route::get('/import', [PenjualanController::class, 'import'])->name('import');
             Route::post('/import_ajax', [PenjualanController::class, 'import_ajax'])->name('import_ajax');
             Route::get('/export_excel', [PenjualanController::class, 'export_excel'])->name('export_excel');
             Route::get('/export_pdf', [PenjualanController::class, 'export_pdf'])->name('export_pdf');
             Route::get('/{id}/edit_ajax', [PenjualanController::class, 'edit_ajax'])->name('edit_ajax');
-            Route::put('/{id}/update_ajax', [PenjualanController::class, 'update_ajax'])->name('update_ajax');
-            Route::get('/{id}/delete_ajax', [PenjualanController::class, 'confirm_ajax'])->name('delete_ajax');
+            Route::post('/{id}/update_ajax', [PenjualanController::class, 'update_ajax'])->name('update_ajax');
+            Route::get('/{id}/delete_ajax', [PenjualanController::class, 'confirm_ajax'])->name('confirm_ajax');
             Route::delete('/{id}/delete_ajax', [PenjualanController::class, 'delete_ajax'])->name('delete_ajax');
-            Route::get('/{id}/show', [PenjualanController::class, 'show'])->name('show');
+            Route::get('/{id}/show', [PenjualanController::class, 'show'])->name('show_detail'); // Ubah nama menjadi unik
             Route::get('/{id}/show_ajax', [PenjualanController::class, 'show_ajax'])->name('show_ajax');
             
             Route::resource('/', PenjualanController::class, [
@@ -219,16 +219,16 @@ Route::middleware(['auth'])->group(function () {
             ]);
         });
 
-        Route::prefix('stokTotal')->name('stokTotal.')->group(function () {
-            Route::get('/', [StokTotalController::class, 'index'])->name('index');
-            Route::get('/{id}/edit', [StokTotalController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [StokTotalController::class, 'update'])->name('update');
-        });
+        // Route::prefix('stokTotal')->name('stokTotal.')->group(function () {
+        //     Route::get('/', [StokTotalController::class, 'index'])->name('index');
+        //     Route::get('/{id}/edit', [StokTotalController::class, 'edit'])->name('edit');
+        //     Route::put('/{id}', [StokTotalController::class, 'update'])->name('update');
+        // });
 
-        // Route untuk Stok Total
-        Route::group(['prefix' => 'stok-total'], function () {
-            Route::get('/', [StokTotalController::class, 'index'])->name('stok_total.index');
-            Route::post('/list', [StokTotalController::class, 'list'])->name('stok_total.list');
-        });
+        // // Route untuk Stok Total
+        // Route::group(['prefix' => 'stok-total'], function () {
+        //     Route::get('/', [StokTotalController::class, 'index'])->name('stok_total.index');
+        //     Route::post('/list', [StokTotalController::class, 'list'])->name('stok_total.list');
+        // });
     });
 });

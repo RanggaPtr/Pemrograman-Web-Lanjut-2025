@@ -25,7 +25,7 @@ class WelcomeController extends Controller
         // Ambil semua data stok dan kelompokkan berdasarkan barang_id
         $stok = StokModel::selectRaw('barang_id, SUM(stok_jumlah) as total_stok')
             ->groupBy('barang_id')
-            ->with('barang'); // Pastikan relasi dengan m_barang
+            ->with('barang'); //  relasi dengan m_barang
 
         // Kembalikan data dalam format DataTables
         return DataTables::of($stok)

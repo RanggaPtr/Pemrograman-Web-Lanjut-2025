@@ -1,4 +1,9 @@
-<form action="{{ url('/penjualan/ajax') }}" method="POST" id="form-tambah">
+<!-- resources/views/penjualan/create_ajax.blade.php -->
+
+<!-- Meta CSRF Token -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<form action="{{ url('/penjualan/store_ajax') }}" method="POST" id="form-tambah">
     @csrf
     <div id="modal-master" class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -15,7 +20,7 @@
                 </div>
                 <div class="form-group">
                     <label>Pembeli</label>
-                    <input type="text" name="pembeli" id="pembeli" class="form-control" required>
+                    <input type="text" name="pembeli" id="pembeli" class="form-control" required value="Budi Santoso">
                     <small id="error-pembeli" class="error-text form-text text-danger"></small>
                 </div>
                 <div class="form-group">
@@ -46,17 +51,18 @@
                 </div>
                 <div class="form-group">
                     <label>Total Harga</label>
-                    <input type="text" id="total_harga" class="form-control" readonly>
-                    <input type="hidden" name="total_harga" id="total_harga_hidden">
+                    <input type="text" id="total_harga" class="form-control" readonly value="Rp 0">
+                    <input type="hidden" name="total_harga" id="total_harga_hidden" value="0">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" data-dismiss="modal" class="btn btn-warning">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="submit" class="btn btn-primary" disabled>Simpan</button>
             </div>
         </div>
     </div>
 </form>
+
 <style>
     .autocomplete-suggestions {
         position: absolute;
@@ -69,18 +75,226 @@
         border-radius: 4px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-
     .autocomplete-suggestion {
         padding: 8px 12px;
         cursor: pointer;
     }
-
     .autocomplete-suggestion:hover {
         background-color: #f8f9fa;
     }
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .error-text {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
 </style>
+
 <script>
     var barangs = @json($barangs);
+
+    $(document).ready(function() {
+        // Set tanggal otomatis ke waktu saat ini
+        var now = new Date();
+        var formattedDate = now.toISOString().slice(0, 16);
+        $('#penjualan_tanggal').val(formattedDate);
+
+        // Tambah baris pertama secara otomatis
+        addDetailRow();
+
+        // Saat modal dibuka, tambahkan inert pada elemen di luar modal
+        $('#modal-master').on('shown.bs.modal', function() {
+            $('body > :not(#modal-master)').attr('inert', '');
+        });
+
+        // Saat modal ditutup, hapus inert
+        $('#modal-master').on('hidden.bs.modal', function() {
+            $('body > :not(#modal-master)').removeAttr('inert');
+        });
+
+        // Validasi form
+        $("#form-tambah").validate({
+            rules: {
+                user_id: {
+                    required: true,
+                    number: true
+                },
+                pembeli: {
+                    required: true,
+                    maxlength: 50
+                },
+                penjualan_kode: {
+                    required: true,
+                    maxlength: 20
+                },
+                penjualan_tanggal: {
+                    required: true
+                }
+            },
+            messages: {
+                user_id: {
+                    required: "User ID harus diisi.",
+                    number: "User ID harus berupa angka."
+                },
+                pembeli: {
+                    required: "Nama pembeli harus diisi.",
+                    maxlength: "Nama pembeli maksimal 50 karakter."
+                },
+                penjualan_kode: {
+                    required: "Kode penjualan harus diisi.",
+                    maxlength: "Kode penjualan maksimal 20 karakter."
+                },
+                penjualan_tanggal: {
+                    required: "Tanggal penjualan harus diisi."
+                }
+            },
+            submitHandler: function(form) {
+                $('.error-text').text('');
+                $('.is-invalid').removeClass('is-invalid');
+
+                // Validasi baris di tabel detail
+                let validDetails = [];
+                let hasInvalidRow = false;
+
+                $('#detailTable tbody tr').each(function(index) {
+                    var row = $(this);
+                    var barangId = row.find('.barang-id').val();
+                    var harga = parseFloat(row.find('.harga').val()) || 0;
+                    var jumlah = parseInt(row.find('.jumlah').val()) || 0;
+
+                    // Jika baris tidak valid, tandai sebagai invalid
+                    if (!barangId || harga <= 0 || jumlah <= 0) {
+                        hasInvalidRow = true;
+                        if (!barangId) {
+                            row.find('.barang-search').addClass('is-invalid');
+                            row.find('.barang-search').siblings('.error-text').text('Pilih barang terlebih dahulu.');
+                        }
+                        if (harga <= 0) {
+                            row.find('.harga').addClass('is-invalid');
+                            row.find('.harga').siblings('.error-text').text('Harga harus lebih dari 0.');
+                        }
+                        if (jumlah <= 0) {
+                            row.find('.jumlah').addClass('is-invalid');
+                            row.find('.jumlah').siblings('.error-text').text('Jumlah harus lebih dari 0.');
+                        }
+                    } else {
+                        validDetails.push({
+                            barang_id: barangId,
+                            harga: harga,
+                            jumlah: jumlah
+                        });
+                    }
+                });
+
+                // Jika tidak ada baris valid, tampilkan pesan error
+                if (validDetails.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menyimpan',
+                        text: 'Harap tambahkan setidaknya satu barang yang valid sebelum menyimpan.'
+                    });
+                    return;
+                }
+
+                // Jika ada baris yang tidak valid, jangan lanjutkan
+                if (hasInvalidRow) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menyimpan',
+                        text: 'Harap lengkapi semua data barang dengan benar.'
+                    });
+                    return;
+                }
+
+                // Prepare form data
+                var formData = new FormData(form);
+                formData.delete('details');
+
+                // Tambahkan data details ke formData
+                validDetails.forEach((detail, index) => {
+                    formData.append(`details[${index}][barang_id]`, detail.barang_id);
+                    formData.append(`details[${index}][harga]`, detail.harga);
+                    formData.append(`details[${index}][jumlah]`, detail.jumlah);
+                });
+
+                // Send AJAX request
+                $.ajax({
+                    url: form.action,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                        xhr.setRequestHeader('X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
+                    },
+                    success: function(response) {
+                        console.log('Respons dari server:', response);
+                        if (response.status) {
+                            $('#myModal').modal('hide');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message
+                            });
+                            if (typeof dataPenjualan !== 'undefined') {
+                                dataPenjualan.ajax.reload();
+                            }
+                        } else {
+                            $('.error-text').text('');
+                            $.each(response.msgField, function(prefix, val) {
+                                if (prefix.startsWith('details')) {
+                                    var index = prefix.match(/details\.(\d+)\./)[1];
+                                    var field = prefix.split('.').pop();
+                                    var row = $('#detailTable tbody tr').eq(index);
+                                    if (field === 'barang_id') {
+                                        row.find('.barang-search').addClass('is-invalid');
+                                        row.find('.barang-search').siblings('.error-text').text(val[0]);
+                                    } else if (field === 'harga') {
+                                        row.find('.harga').addClass('is-invalid');
+                                        row.find('.harga').siblings('.error-text').text(val[0]);
+                                    } else if (field === 'jumlah') {
+                                        row.find('.jumlah').addClass('is-invalid');
+                                        row.find('.jumlah').siblings('.error-text').text(val[0]);
+                                    }
+                                } else {
+                                    $('#error-' + prefix).text(val[0]);
+                                }
+                            });
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Terjadi Kesalahan',
+                                text: response.message
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        console.log('Error AJAX:', xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Terjadi Kesalahan',
+                            text: 'Gagal menghubungi server. Silakan coba lagi.'
+                        });
+                    }
+                });
+                return false;
+            },
+            errorElement: 'span',
+            errorPlacement: function(error, element) {
+                error.addClass('invalid-feedback');
+                element.closest('.form-group').append(error);
+            },
+            highlight: function(element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid');
+            }
+        });
+    });
 
     function addDetailRow() {
         var row = `
@@ -90,23 +304,40 @@
                         <input type="text" class="form-control barang-search" placeholder="Ketik untuk mencari barang..." required>
                         <input type="hidden" class="barang-id" name="details[][barang_id]">
                         <div class="autocomplete-suggestions d-none"></div>
+                        <small class="error-text form-text text-danger"></small>
                     </div>
                 </td>
                 <td>
                     <input type="number" class="form-control harga" name="details[][harga]" readonly onfocus="this.blur()">
                     <input type="hidden" class="harga-hidden" name="details[][harga]">
+                    <small class="error-text form-text text-danger"></small>
                 </td>
-                <td><input type="number" class="form-control jumlah" name="details[][jumlah]" oninput="updateTotal(this)" required min="1"></td>
-                <td><input type="text" class="form-control total" readonly></td>
-                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeDetailRow(this)">Hapus</button></td>
+                <td>
+                    <input type="number" class="form-control jumlah" name="details[][jumlah]" oninput="updateTotal(this)" required min="1">
+                    <small class="error-text form-text text-danger"></small>
+                </td>
+                <td>
+                    <input type="text" class="form-control total" readonly value="0">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeDetailRow(this)">Hapus</button>
+                </td>
             </tr>`;
         $('#detailTable tbody').append(row);
+        checkFormValidity();
 
         // Tambahkan event listener untuk pencarian barang
         $('.barang-search').last().on('input', function() {
             var query = $(this).val().toLowerCase();
             var suggestionsContainer = $(this).siblings('.autocomplete-suggestions');
             suggestionsContainer.empty().addClass('d-none');
+
+            // Bersihkan barang-id dan harga jika pengguna mengetik tanpa memilih
+            $(this).siblings('.barang-id').val('');
+            $(this).closest('tr').find('.harga').val('');
+            $(this).closest('tr').find('.harga-hidden').val('');
+            updateTotal($(this).closest('tr').find('.jumlah')[0]);
+            checkFormValidity();
 
             if (query.length > 0) {
                 var filteredBarangs = barangs.filter(b => b.barang_nama.toLowerCase().includes(query));
@@ -133,10 +364,11 @@
             row.find('.barang-search').val(nama);
             row.find('.barang-id').val(barangId);
             row.find('.harga').val(harga);
-            row.find('.harga-hidden').val(harga); // Simpan nilai di input tersembunyi
+            row.find('.harga-hidden').val(harga);
             row.find('.autocomplete-suggestions').empty().addClass('d-none');
 
             updateTotal(row.find('.jumlah')[0]);
+            checkFormValidity();
         });
 
         // Sembunyikan saran saat klik di luar
@@ -177,153 +409,27 @@
             $('#total_harga').val('Rp 0');
             $('#total_harga_hidden').val(0);
         }
+        checkFormValidity();
     }
 
-    $(document).ready(function() {
-        // Set tanggal otomatis ke waktu saat ini
-        var now = new Date();
-        var formattedDate = now.toISOString().slice(0, 16);
-        $('#penjualan_tanggal').val(formattedDate);
-
-        // Tambah baris pertama secara otomatis
-        addDetailRow();
-
-        // Saat modal dibuka, tambahkan inert pada elemen di luar modal
-        $('#modal-master').on('shown.bs.modal', function() {
-            $('body > :not(#modal-master)').attr('inert', '');
-        });
-
-        // Saat modal ditutup, hapus inert
-        $('#modal-master').on('hidden.bs.modal', function() {
-            $('body > :not(#modal-master)').removeAttr('inert');
-        });
-
-        // Validasi form
-        $("#form-tambah").validate({
-            rules: {
-                user_id: {
-                    required: true,
-                    number: true
-                },
-                pembeli: {
-                    required: true,
-                    maxlength: 50
-                },
-                penjualan_kode: {
-                    required: true,
-                    maxlength: 20
-                },
-                penjualan_tanggal: {
-                    required: true
-                },
-                "details[][barang_id]": {
-                    required: true,
-                    number: true
-                },
-                "details[][harga]": {
-                    required: true,
-                    number: true,
-                    min: 1
-                },
-                "details[][jumlah]": {
-                    required: true,
-                    number: true,
-                    min: 1
-                }
-            },
-            submitHandler: function(form) {
-                // Cek apakah ada barang_id yang kosong
-                var barangIdKosong = false;
-                $('.barang-id').each(function() {
-                    if (!$(this).val()) {
-                        barangIdKosong = true;
-                        $(this).closest('tr').find('.barang-search').addClass('is-invalid');
-                    }
-                });
-
-                if (barangIdKosong) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Terjadi Kesalahan',
-                        text: 'Silakan pilih barang untuk semua baris.'
-                    });
-                    return false;
-                }
-
-                // Pastikan semua harga dan jumlah terupdate sebelum submit
-                $('#detailTable tbody tr').each(function() {
-                    var row = $(this);
-                    var harga = parseFloat(row.find('.harga').val()) || 0;
-                    var jumlah = parseInt(row.find('.jumlah').val()) || 0;
-                    row.find('.harga-hidden').val(harga);
-                    row.find('.jumlah').val(jumlah);
-                });
-
-                console.log('Data yang dikirim:', $(form).serializeArray());
-                $.ajax({
-                    url: form.action,
-                    type: form.method,
-                    data: $(form).serialize(),
-                    success: function(response) {
-                        console.log('Respons dari server:', response);
-                        if (response.status) {
-                            $('#myModal').modal('hide');
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil',
-                                text: response.message
-                            });
-                            dataPenjualan.ajax.reload();
-                        } else {
-                            $('.error-text').text('');
-                            $.each(response.msgField, function(prefix, val) {
-                                if (prefix.startsWith('details')) {
-                                    var index = prefix.match(/details\.(\d+)\./)[1];
-                                    var field = prefix.split('.').pop();
-                                    var row = $('#detailTable tbody tr').eq(index);
-                                    if (field === 'barang_id') {
-                                        row.find('.barang-search').addClass('is-invalid');
-                                        row.find('.barang-search').after(`<small class="error-text form-text text-danger">${val[0]}</small>`);
-                                    } else if (field === 'harga') {
-                                        row.find('.harga').addClass('is-invalid');
-                                        row.find('.harga').after(`<small class="error-text form-text text-danger">${val[0]}</small>`);
-                                    } else if (field === 'jumlah') {
-                                        row.find('.jumlah').addClass('is-invalid');
-                                        row.find('.jumlah').after(`<small class="error-text form-text text-danger">${val[0]}</small>`);
-                                    }
-                                } else {
-                                    $('#error-' + prefix).text(val[0]);
-                                }
-                            });
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Terjadi Kesalahan',
-                                text: response.message
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        console.log('Error AJAX:', xhr.responseText);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Terjadi Kesalahan',
-                            text: 'Gagal menghubungi server. Silakan coba lagi.'
-                        });
-                    }
-                });
-                return false;
-            },
-            errorElement: 'span',
-            errorPlacement: function(error, element) {
-                error.addClass('invalid-feedback');
-                element.closest('.form-group').append(error);
-            },
-            highlight: function(element) {
-                $(element).addClass('is-invalid');
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid');
+    // Fungsi untuk memeriksa validitas form dan mengaktifkan/menonaktifkan tombol Simpan
+    function checkFormValidity() {
+        let isValid = true;
+        $('#detailTable tbody tr').each(function() {
+            var barangId = $(this).find('.barang-id').val();
+            var harga = parseFloat($(this).find('.harga').val()) || 0;
+            var jumlah = parseInt($(this).find('.jumlah').val()) || 0;
+            if (!barangId || harga <= 0 || jumlah <= 0) {
+                isValid = false;
+                return false; // Keluar dari loop
             }
         });
+        // Aktifkan/nonaktifkan tombol Simpan
+        $('button[type="submit"]').prop('disabled', !isValid || $('#detailTable tbody tr').length === 0);
+    }
+
+    // Panggil checkFormValidity setiap kali ada perubahan pada tabel
+    $(document).on('input', '.barang-search, .harga, .jumlah', function() {
+        checkFormValidity();
     });
 </script>
