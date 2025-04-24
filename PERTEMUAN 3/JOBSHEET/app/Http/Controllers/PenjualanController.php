@@ -199,111 +199,127 @@ class PenjualanController extends Controller
 
     public function store_ajax(Request $request)
     {
-        if ($request->ajax() || $request->wantsJson()) {
-            $rules = [
-                'user_id' => 'required|integer',
-                'pembeli' => 'required|string|max:50',
-                'penjualan_kode' => 'required|string|max:20|unique:t_penjualan,penjualan_kode',
-                'penjualan_tanggal' => 'required|date',
-                'details' => 'required|array|min:1',
-            ];
-
-            if ($request->has('details')) {
-                foreach ($request->details as $index => $detail) {
-                    $rules["details.{$index}.barang_id"] = 'required|integer|exists:m_barang,barang_id';
-                    $rules["details.{$index}.harga"] = 'required|numeric|min:1';
-                    $rules["details.{$index}.jumlah"] = 'required|integer|min:1';
-                }
-            }
-
-            $validator = Validator::make($request->all(), $rules);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Validasi gagal',
-                    'msgField' => $validator->errors()
-                ], 422);
-            }
-
-            try {
-                DB::beginTransaction();
-
-                foreach ($request->details as $index => $detail) {
-                    $barangId = $detail['barang_id'];
-                    $jumlah = $detail['jumlah'];
-
-                    $totalStock = StokModel::where('barang_id', $barangId)
-                        ->sum('stok_jumlah');
-
-                    if ($totalStock < $jumlah) {
-                        DB::rollBack();
-                        return response()->json([
-                            'status' => false,
-                            'message' => "Stok barang dengan ID {$barangId} tidak mencukupi. Stok tersedia: {$totalStock}, jumlah yang diminta: {$jumlah}"
-                        ], 400);
-                    }
-                }
-
-                $totalHarga = 0;
-                foreach ($request->details as $detail) {
-                    $totalHarga += $detail['harga'] * $detail['jumlah'];
-                }
-
-                $penjualan = PenjualanModel::create([
-                    'user_id' => $request->user_id,
-                    'pembeli' => $request->pembeli,
-                    'penjualan_kode' => $request->penjualan_kode,
-                    'penjualan_tanggal' => $request->penjualan_tanggal,
-                    'total_harga' => $totalHarga,
-                ]);
-
-                foreach ($request->details as $detail) {
-                    PenjualanDetailModel::create([
-                        'penjualan_id' => $penjualan->penjualan_id,
-                        'barang_id' => $detail['barang_id'],
-                        'harga' => $detail['harga'],
-                        'jumlah' => $detail['jumlah'],
-                    ]);
-
-                    StokModel::create([
-                        'barang_id' => $detail['barang_id'],
-                        'user_id' => $request->user_id,
-                        'supplier_id' => null,
-                        'stock_tanggal' => now(),
-                        'stok_jumlah' => -$detail['jumlah'],
-                    ]);
-                }
-
-                DB::commit();
-                Log::info('Penjualan berhasil (store_ajax): penjualan_id=' . $penjualan->penjualan_id);
-
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data penjualan berhasil disimpan'
-                ]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Error in store_ajax: ' . $e->getMessage());
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-                ], 500);
-            }
-        }
-        return redirect('/');
-    }
-
-    public function edit_ajax(string $id)
-    {
-        $penjualan = PenjualanModel::with('details')->find($id);
-        $users = UserModel::select('user_id', 'nama')->get();
-        $barangs = BarangModel::select('barang_id', 'barang_nama')->get();
-        return view('penjualan.edit_ajax', [
-            'penjualan' => $penjualan,
-            'users' => $users,
-            'barangs' => $barangs
+        // Validasi data
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer',
+            'pembeli' => 'required|string|max:50',
+            'penjualan_kode' => 'required|string|max:20',
+            'penjualan_tanggal' => 'required|date',
+            'total_harga' => 'required|numeric|min:0',
+            'details' => 'required|array|min:1',
+            'details.*.barang_id' => 'required|integer|exists:m_barang,barang_id',
+            'details.*.harga' => 'required|numeric|min:0',
+            'details.*.jumlah' => 'required|integer|min:1',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'msgField' => $validator->errors()
+            ], 422);
+        }
+
+        // Hitung total jumlah per barang_id
+        $barangJumlah = [];
+        foreach ($request->details as $detail) {
+            $barangId = $detail['barang_id'];
+            $jumlah = $detail['jumlah'];
+
+            if (!isset($barangJumlah[$barangId])) {
+                $barangJumlah[$barangId] = 0;
+            }
+            $barangJumlah[$barangId] += $jumlah;
+        }
+
+        // Cek ketersediaan stok
+        foreach ($barangJumlah as $barangId => $totalJumlah) {
+            // Log data yang akan digunakan untuk query
+            Log::info('Mencoba mengambil stok untuk barang_id: ' . $barangId);
+
+            // Ambil stok barang
+            $stok = StokModel::where('barang_id', $barangId)->first();
+
+            // Log hasil query
+            Log::info('Hasil query stok untuk barang_id: ' . $barangId, [
+                'stok' => $stok ? $stok->toArray() : null,
+                'total_jumlah' => $totalJumlah
+            ]);
+
+            // Ambil nama barang untuk pesan error
+            $barang = BarangModel::find($barangId);
+            $barangNama = $barang ? $barang->barang_nama : 'Tidak Diketahui';
+
+            if (!$stok) {
+                Log::error('Stok tidak ditemukan untuk barang_id: ' . $barangId);
+                return response()->json([
+                    'status' => false,
+                    'message' => "Stok barang $barangNama belum tersedia di stok total."
+                ], 400);
+            }
+
+            if ($stok->stok_jumlah < $totalJumlah) {
+                Log::error('Stok tidak cukup untuk barang_id: ' . $barangId, [
+                    'stok_jumlah' => $stok->stok_jumlah,
+                    'total_jumlah' => $totalJumlah
+                ]);
+                return response()->json([
+                    'status' => false,
+                    'message' => "Stok barang $barangNama tidak cukup. Stok tersedia: {$stok->stok_jumlah}, dibutuhkan: $totalJumlah."
+                ], 400);
+            }
+
+            Log::info('Stok valid untuk barang_id: ' . $barangId, [
+                'stok_jumlah' => $stok->stok_jumlah,
+                'total_jumlah' => $totalJumlah
+            ]);
+        }
+
+        // Simpan data penjualan
+        try {
+            DB::beginTransaction();
+
+            // Simpan ke tabel t_penjualan
+            $penjualan = new PenjualanModel();
+            $penjualan->user_id = $request->user_id;
+            $penjualan->pembeli = $request->pembeli;
+            $penjualan->penjualan_kode = $request->penjualan_kode;
+            $penjualan->penjualan_tanggal = $request->penjualan_tanggal;
+            $penjualan->total_harga = $request->total_harga;
+            $penjualan->save();
+
+            // Simpan detail penjualan dan kurangi stok
+            foreach ($request->details as $detail) {
+                $barangId = $detail['barang_id'];
+                $jumlah = $detail['jumlah'];
+
+                // Simpan detail
+                $penjualanDetail = new PenjualanDetailModel();
+                $penjualanDetail->penjualan_id = $penjualan->penjualan_id;
+                $penjualanDetail->barang_id = $barangId;
+                $penjualanDetail->harga = $detail['harga'];
+                $penjualanDetail->jumlah = $jumlah;
+                $penjualanDetail->save();
+
+                // Kurangi stok
+                $stok = StokModel::where('barang_id', $barangId)->first();
+                $stok->stok_jumlah -= $jumlah;
+                $stok->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Penjualan berhasil disimpan!'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal menyimpan penjualan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update_ajax(Request $request, $id)

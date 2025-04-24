@@ -1,5 +1,3 @@
-<!-- resources/views/penjualan/create_ajax.blade.php -->
-
 <!-- Meta CSRF Token -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -132,6 +130,11 @@
                 },
                 penjualan_tanggal: {
                     required: true
+                },
+                total_harga: {
+                    required: true,
+                    number: true,
+                    min: 0
                 }
             },
             messages: {
@@ -149,6 +152,11 @@
                 },
                 penjualan_tanggal: {
                     required: "Tanggal penjualan harus diisi."
+                },
+                total_harga: {
+                    required: "Total harga harus diisi.",
+                    number: "Total harga harus berupa angka.",
+                    min: "Total harga tidak boleh negatif."
                 }
             },
             submitHandler: function(form) {
@@ -162,8 +170,13 @@
                 $('#detailTable tbody tr').each(function(index) {
                     var row = $(this);
                     var barangId = row.find('.barang-id').val();
-                    var harga = parseFloat(row.find('.harga').val()) || 0;
+                    var harga = parseFloat(row.find('.harga-hidden').val()) || 0; // Ambil dari harga-hidden
                     var jumlah = parseInt(row.find('.jumlah').val()) || 0;
+
+                    // Skip baris yang benar-benar kosong
+                    if (!barangId && harga === 0 && jumlah === 0) {
+                        return; // Lewati baris ini
+                    }
 
                     // Jika baris tidak valid, tandai sebagai invalid
                     if (!barangId || harga <= 0 || jumlah <= 0) {
@@ -211,14 +224,26 @@
 
                 // Prepare form data
                 var formData = new FormData(form);
-                formData.delete('details');
 
-                // Tambahkan data details ke formData
+                // Hapus semua data details yang lama dari form HTML asli
+                formData.delete('details[]');
+
+                // Tambahkan data details yang valid ke formData
                 validDetails.forEach((detail, index) => {
                     formData.append(`details[${index}][barang_id]`, detail.barang_id);
                     formData.append(`details[${index}][harga]`, detail.harga);
                     formData.append(`details[${index}][jumlah]`, detail.jumlah);
                 });
+
+                // Pastikan total_harga diatur dengan benar
+                var totalHarga = parseFloat($('#total_harga_hidden').val()) || 0;
+                formData.set('total_harga', totalHarga);
+
+                // Log formData untuk debugging
+                console.log('Data yang dikirim ke server:');
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
 
                 // Send AJAX request
                 $.ajax({
@@ -302,18 +327,18 @@
                 <td>
                     <div class="position-relative">
                         <input type="text" class="form-control barang-search" placeholder="Ketik untuk mencari barang..." required>
-                        <input type="hidden" class="barang-id" name="details[][barang_id]">
+                        <input type="hidden" class="barang-id">
                         <div class="autocomplete-suggestions d-none"></div>
                         <small class="error-text form-text text-danger"></small>
                     </div>
                 </td>
                 <td>
-                    <input type="number" class="form-control harga" name="details[][harga]" readonly onfocus="this.blur()">
-                    <input type="hidden" class="harga-hidden" name="details[][harga]">
+                    <input type="number" class="form-control harga" readonly onfocus="this.blur()">
+                    <input type="hidden" class="harga-hidden">
                     <small class="error-text form-text text-danger"></small>
                 </td>
                 <td>
-                    <input type="number" class="form-control jumlah" name="details[][jumlah]" oninput="updateTotal(this)" required min="1">
+                    <input type="number" class="form-control jumlah" oninput="updateTotal(this)" required min="1">
                     <small class="error-text form-text text-danger"></small>
                 </td>
                 <td>
@@ -397,6 +422,8 @@
         });
         $('#total_harga').val('Rp ' + totalHarga.toLocaleString('id-ID'));
         $('#total_harga_hidden').val(totalHarga);
+
+        checkFormValidity();
     }
 
     function removeDetailRow(btn) {
@@ -415,17 +442,28 @@
     // Fungsi untuk memeriksa validitas form dan mengaktifkan/menonaktifkan tombol Simpan
     function checkFormValidity() {
         let isValid = true;
+        let hasAtLeastOneValidRow = false;
+
         $('#detailTable tbody tr').each(function() {
             var barangId = $(this).find('.barang-id').val();
             var harga = parseFloat($(this).find('.harga').val()) || 0;
             var jumlah = parseInt($(this).find('.jumlah').val()) || 0;
-            if (!barangId || harga <= 0 || jumlah <= 0) {
+
+            // Skip baris yang benar-benar kosong
+            if (!barangId && harga === 0 && jumlah === 0) {
+                return; // Lanjut ke baris berikutnya
+            }
+
+            // Tandai sebagai valid jika ada baris yang lengkap
+            if (barangId && harga > 0 && jumlah > 0) {
+                hasAtLeastOneValidRow = true;
+            } else {
                 isValid = false;
-                return false; // Keluar dari loop
             }
         });
-        // Aktifkan/nonaktifkan tombol Simpan
-        $('button[type="submit"]').prop('disabled', !isValid || $('#detailTable tbody tr').length === 0);
+
+        // Aktifkan tombol Simpan hanya jika ada setidaknya satu baris valid
+        $('button[type="submit"]').prop('disabled', !hasAtLeastOneValidRow);
     }
 
     // Panggil checkFormValidity setiap kali ada perubahan pada tabel

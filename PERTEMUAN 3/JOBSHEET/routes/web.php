@@ -45,14 +45,14 @@ Route::post('register', [AuthController::class, 'postregister']);
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth'); //untuk keamanan, logout sebaiknya menggunakan metode POST untuk mencegah logout tidak sengaja (misalnya, jika tautan /logout diakses oleh crawler). 
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/stok', [StokController::class, 'index'])->name('stok.index');
-    Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
-    Route::get('/penjualan/create', [PenjualanController::class, 'create'])->name('penjualan.create');
-    Route::post('/penjualan', [PenjualanController::class, 'store'])->name('penjualan.store');
-    Route::get('/penjualan/{id}', [PenjualanController::class, 'show'])->name('penjualan.show');
+    // Route::get('/stok', [StokController::class, 'index'])->name('stok.index');
+    // Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
+    // Route::get('/penjualan/create', [PenjualanController::class, 'create'])->name('penjualan.create');
+    // Route::post('/penjualan', [PenjualanController::class, 'store'])->name('penjualan.store');
+    // Route::get('/penjualan/{id}', [PenjualanController::class, 'show'])->name('penjualan.show');
     Route::post('/user/update-profile-photo', [UserController::class, 'updateProfilePhoto'])->name('user.updateProfilePhoto');
 
-    Route::middleware(['authorize:ADM,MNG'])->group(function () { // artinya semua route di dalam group ini harus login dulu
+    Route::middleware(['authorize:ADM,MNG,STF'])->group(function () { // artinya semua route di dalam group ini harus login dulu
 
         Route::get('/', [WelcomeController::class, 'index']);
         Route::post('/dashboard/omset_kotor', [WelcomeController::class, 'omsetKotor'])->name('dashboard.omset_kotor');
@@ -220,6 +220,34 @@ Route::middleware(['auth'])->group(function () {
             ]);
         });
 
+        //route untuk STF
+        // Route::middleware(['authorize:ADM,MNG,STF'])->group(function () { // artinya semua route di dalam group ini harus login dulu
+        //     Route::prefix('stf')->name('stf.')->group(function () {
+        //         Route::get('/', [StfController::class, 'index'])->name('index');
+        //         Route::get('/{id}/edit', [StfController::class, 'edit'])->name('edit');
+        //         Route::put('/{id}', [StfController::class, 'update'])->name('update');  
+        //     })
+        //     Route::prefix('penjualan')->name('penjualan.')->group(function () {
+        //         Route::post('/list', [PenjualanController::class, 'list'])->name('list');
+        //         Route::get('/create_ajax', [PenjualanController::class, 'create_ajax'])->name('create_ajax');
+        //         Route::post('/store_ajax', [PenjualanController::class, 'store_ajax'])->name('store_ajax');
+        //         Route::get('/import', [PenjualanController::class, 'import'])->name('import');
+        //         Route::post('/import_ajax', [PenjualanController::class, 'import_ajax'])->name('import_ajax');
+        //         Route::get('/export_excel', [PenjualanController::class, 'export_excel'])->name('export_excel');
+        //         Route::get('/export_pdf', [PenjualanController::class, 'export_pdf'])->name('export_pdf');
+        //         Route::get('/{id}/edit_ajax', [PenjualanController::class, 'edit_ajax'])->name('edit_ajax');
+        //         Route::post('/{id}/update_ajax', [PenjualanController::class, 'update_ajax'])->name('update_ajax');
+        //         Route::get('/{id}/delete_ajax', [PenjualanController::class, 'confirm_ajax'])->name('confirm_ajax');
+        //         Route::delete('/{id}/delete_ajax', [PenjualanController::class, 'delete_ajax'])->name('delete_ajax');
+        //         Route::get('/{id}/show', [PenjualanController::class, 'show'])->name('show_detail'); // Ubah nama menjadi unik
+        //         Route::get('/{id}/show_ajax', [PenjualanController::class, 'show_ajax'])->name('show_ajax');
+                
+        //         Route::resource('/', PenjualanController::class, [
+        //             'parameters' => ['' => 'id'],
+        //             'as' => ''
+        //         ]);
+        //     });
+        // });
         // Route::prefix('stokTotal')->name('stokTotal.')->group(function () {
         //     Route::get('/', [StokTotalController::class, 'index'])->name('index');
         //     Route::get('/{id}/edit', [StokTotalController::class, 'edit'])->name('edit');
