@@ -199,7 +199,6 @@ class PenjualanController extends Controller
 
     public function store_ajax(Request $request)
     {
-        // Validasi data
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|integer',
             'pembeli' => 'required|string|max:50',
@@ -232,82 +231,54 @@ class PenjualanController extends Controller
             $barangJumlah[$barangId] += $jumlah;
         }
 
-        // Cek ketersediaan stok
+        // Validasi stok
         foreach ($barangJumlah as $barangId => $totalJumlah) {
-            // Log data yang akan digunakan untuk query
-            Log::info('Mencoba mengambil stok untuk barang_id: ' . $barangId);
-
-            // Ambil stok barang
-            $stok = StokModel::where('barang_id', $barangId)->first();
-
-            // Log hasil query
-            Log::info('Hasil query stok untuk barang_id: ' . $barangId, [
-                'stok' => $stok ? $stok->toArray() : null,
-                'total_jumlah' => $totalJumlah
-            ]);
-
-            // Ambil nama barang untuk pesan error
+            $totalStock = StokModel::where('barang_id', $barangId)->sum('stok_jumlah');
             $barang = BarangModel::find($barangId);
             $barangNama = $barang ? $barang->barang_nama : 'Tidak Diketahui';
 
-            if (!$stok) {
-                Log::error('Stok tidak ditemukan untuk barang_id: ' . $barangId);
-                return response()->json([
-                    'status' => false,
-                    'message' => "Stok barang $barangNama belum tersedia di stok total."
-                ], 400);
-            }
-
-            if ($stok->stok_jumlah < $totalJumlah) {
+            if ($totalStock === null || $totalStock < $totalJumlah) {
                 Log::error('Stok tidak cukup untuk barang_id: ' . $barangId, [
-                    'stok_jumlah' => $stok->stok_jumlah,
+                    'total_stock' => $totalStock,
                     'total_jumlah' => $totalJumlah
                 ]);
                 return response()->json([
                     'status' => false,
-                    'message' => "Stok barang $barangNama tidak cukup. Stok tersedia: {$stok->stok_jumlah}, dibutuhkan: $totalJumlah."
+                    'message' => "Stok barang $barangNama tidak cukup. Stok tersedia: " . ($totalStock ?? 0) . ", dibutuhkan: $totalJumlah."
                 ], 400);
             }
-
-            Log::info('Stok valid untuk barang_id: ' . $barangId, [
-                'stok_jumlah' => $stok->stok_jumlah,
-                'total_jumlah' => $totalJumlah
-            ]);
         }
 
-        // Simpan data penjualan
         try {
             DB::beginTransaction();
 
-            // Simpan ke tabel t_penjualan
-            $penjualan = new PenjualanModel();
-            $penjualan->user_id = $request->user_id;
-            $penjualan->pembeli = $request->pembeli;
-            $penjualan->penjualan_kode = $request->penjualan_kode;
-            $penjualan->penjualan_tanggal = $request->penjualan_tanggal;
-            $penjualan->total_harga = $request->total_harga;
-            $penjualan->save();
+            $penjualan = PenjualanModel::create([
+                'user_id' => $request->user_id,
+                'pembeli' => $request->pembeli,
+                'penjualan_kode' => $request->penjualan_kode,
+                'penjualan_tanggal' => $request->penjualan_tanggal,
+                'total_harga' => $request->total_harga,
+            ]);
 
-            // Simpan detail penjualan dan kurangi stok
             foreach ($request->details as $detail) {
-                $barangId = $detail['barang_id'];
-                $jumlah = $detail['jumlah'];
+                PenjualanDetailModel::create([
+                    'penjualan_id' => $penjualan->penjualan_id,
+                    'barang_id' => $detail['barang_id'],
+                    'harga' => $detail['harga'],
+                    'jumlah' => $detail['jumlah'],
+                ]);
 
-                // Simpan detail
-                $penjualanDetail = new PenjualanDetailModel();
-                $penjualanDetail->penjualan_id = $penjualan->penjualan_id;
-                $penjualanDetail->barang_id = $barangId;
-                $penjualanDetail->harga = $detail['harga'];
-                $penjualanDetail->jumlah = $jumlah;
-                $penjualanDetail->save();
-
-                // Kurangi stok
-                $stok = StokModel::where('barang_id', $barangId)->first();
-                $stok->stok_jumlah -= $jumlah;
-                $stok->save();
+                StokModel::create([
+                    'barang_id' => $detail['barang_id'],
+                    'user_id' => $request->user_id,
+                    'supplier_id' => null,
+                    'stock_tanggal' => now(),
+                    'stok_jumlah' => -$detail['jumlah'],
+                ]);
             }
 
             DB::commit();
+            Log::info('Penjualan berhasil (store_ajax): penjualan_id=' . $penjualan->penjualan_id);
 
             return response()->json([
                 'status' => true,
@@ -315,6 +286,7 @@ class PenjualanController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Gagal menyimpan penjualan (store_ajax): ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Gagal menyimpan penjualan: ' . $e->getMessage()
@@ -357,10 +329,9 @@ class PenjualanController extends Controller
 
                 DB::beginTransaction();
 
-                // Ambil detail penjualan lama untuk membatalkan stok keluar
+                // Batalkan stok keluar sebelumnya
                 $oldDetails = PenjualanDetailModel::where('penjualan_id', $id)->get();
                 foreach ($oldDetails as $detail) {
-                    // Tambahkan entri stok untuk membatalkan stok keluar sebelumnya
                     StokModel::create([
                         'barang_id' => $detail->barang_id,
                         'user_id' => $penjualan->user_id,
@@ -455,7 +426,7 @@ class PenjualanController extends Controller
 
                 DB::beginTransaction();
 
-                // Batalkan stok keluar
+                // Kembalikan stok
                 $details = PenjualanDetailModel::where('penjualan_id', $id)->get();
                 foreach ($details as $detail) {
                     StokModel::create([
@@ -463,7 +434,7 @@ class PenjualanController extends Controller
                         'user_id' => $penjualan->user_id,
                         'supplier_id' => null,
                         'stock_tanggal' => now(),
-                        'stok_jumlah' => $detail->jumlah, // Kembalikan stok
+                        'stok_jumlah' => $detail->jumlah,
                     ]);
                 }
 
@@ -494,5 +465,114 @@ class PenjualanController extends Controller
             }
         }
         return redirect('/');
+    }
+
+    public function export_pdf()
+    {
+        // Ambil data penjualan untuk ekspor
+        $penjualan = PenjualanModel::with('detail')
+            ->orderBy('penjualan_tanggal')
+            ->get();
+
+        // Gunakan library Barryvdh\DomPDF\Facade\Pdf
+        $pdf = PDF::loadView('laporan_penjualan', ['penjualan' => $penjualan]);
+        $pdf->setPaper('a4', 'portrait'); // Set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // Set true untuk mengizinkan gambar dari URL
+        $pdf->render();
+
+        // Stream PDF ke browser dengan nama file dinamis
+        return $pdf->stream('Data Penjualan ' . date('Y-m-d H:i:s') . '.pdf');
+    }
+
+    public function export_excel()
+    {
+        // Pastikan tidak ada output sebelum header dikirim
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        // Periksa apakah ekstensi ZipArchive tersedia
+        if (!class_exists('ZipArchive')) {
+            \Log::error('ZipArchive not found during export in PenjualanController');
+            return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
+        }
+
+        try {
+            // Ambil data penjualan untuk ekspor
+            $penjualan = PenjualanModel::with('detail')
+                ->orderBy('penjualan_tanggal')
+                ->get();
+
+            // Periksa apakah ada data penjualan
+            if ($penjualan->isEmpty()) {
+                return redirect()->back()->with('error', 'Tidak ada data penjualan untuk diekspor.');
+            }
+
+            // Buat instance spreadsheet baru
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Buat header tabel
+            $sheet->setCellValue('A1', 'No');
+            $sheet->setCellValue('B1', 'Kode Penjualan');
+            $sheet->setCellValue('C1', 'Tanggal');
+            $sheet->setCellValue('D1', 'Pembeli');
+            $sheet->setCellValue('E1', 'Total Harga (Rp)');
+
+            // Bold header
+            $sheet->getStyle('A1:E1')->getFont()->setBold(true);
+
+            // Tambahkan border pada header
+            $sheet->getStyle('A1:E1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Isi data penjualan
+            $no = 1;
+            $baris = 2;
+            foreach ($penjualan as $item) {
+                $sheet->setCellValue('A' . $baris, $no);
+                $sheet->setCellValue('B' . $baris, $item->penjualan_kode);
+                $sheet->setCellValue('C' . $baris, $item->penjualan_tanggal->format('d-m-Y H:i:s'));
+                $sheet->setCellValue('D' . $baris, $item->pembeli);
+                $sheet->setCellValue('E' . $baris, $item->total_harga);
+
+                $no++;
+                $baris++;
+            }
+
+            // Set lebar kolom secara otomatis
+            foreach (range('A', 'E') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Beri nama sheet
+            $sheet->setTitle('Data Penjualan');
+
+            // Buat writer untuk format Xlsx
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            // Buat nama file dengan format "Data Penjualan YYYY-MM-DD.xlsx"
+            $filename = 'Data Penjualan ' . date('Y-m-d') . '.xlsx';
+
+            // Set header untuk download file
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Pragma: no-cache');
+
+            // Simpan file ke output (download)
+            $writer->save('php://output');
+
+            // Bersihkan spreadsheet dari memori
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            // Hentikan eksekusi
+            exit;
+        } catch (\Exception $e) {
+            \Log::error('Export failed in PenjualanController', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
     }
 }

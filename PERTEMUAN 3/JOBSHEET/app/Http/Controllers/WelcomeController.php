@@ -20,13 +20,13 @@ class WelcomeController extends Controller
         return view('welcome', ['breadcrumb' => $breadcrumb, 'activeMenu' => $activeMenu]);
     }
 
-    // Method untuk menangani AJAX call DataTables di Dashboard
     public function stokTotalList(Request $request)
     {
-        // Ambil semua data stok dan kelompokkan berdasarkan barang_id
+        // Ambil semua data stok, kelompokkan berdasarkan barang_id, dan hanya tampilkan stok >= 0
         $stok = StokModel::selectRaw('barang_id, SUM(stok_jumlah) as total_stok')
             ->groupBy('barang_id')
-            ->with('barang'); //  relasi dengan m_barang
+            ->havingRaw('SUM(stok_jumlah) >= 0')
+            ->with('barang');
 
         // Kembalikan data dalam format DataTables
         return DataTables::of($stok)
@@ -46,14 +46,13 @@ class WelcomeController extends Controller
         // Ambil total omset kotor (sum total harga dari semua transaksi)
         $totalOmset = PenjualanModel::sum('total_harga');
 
-        // Format total omset ke dalam format Rupiah
         $formattedOmset =  number_format($totalOmset ?? 0, 2, ',', '.');
 
         // Format data untuk response JSON
         $data = [
             [
                 'title' => 'Total Omset Kotor',
-                'amount' => $formattedOmset, // Mengembalikan nilai yang sudah diformat
+                'amount' => $formattedOmset ?? 0,
             ]
         ];
 

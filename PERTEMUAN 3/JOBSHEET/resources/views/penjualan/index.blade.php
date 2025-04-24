@@ -1,6 +1,8 @@
 @extends('layouts.template')
 
 @section('content')
+<a href="{{ url('/penjualan/export_excel') }}" class="btn btn-success"><i class="fa fa-file-excel"></i> Export Data Penjualan (Excel)</a>
+<a href="{{ url('/penjualan/export_pdf') }}" class="btn btn-danger"><i class="fa fa-file-pdf"></i> Export Data Penjualan (PDF)</a>
 <div class="card card-outline card-primary">
     <div class="card-header">
         <h3 class="card-title">{{ $page->title }}</h3>

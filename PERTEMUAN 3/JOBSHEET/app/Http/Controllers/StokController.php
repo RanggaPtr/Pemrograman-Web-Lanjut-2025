@@ -6,6 +6,8 @@ use App\Models\StokModel;
 use App\Models\SupplierModel;
 use App\Models\BarangModel;
 use App\Models\UserModel;
+use Barryvdh\DomPDF\Facade\Pdf as FacadePdf;
+use Barryvdh\DomPDF\PDF;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
@@ -384,6 +386,116 @@ class StokController extends Controller
         } catch (\Exception $e) {
             Log::error('Gagal menghapus stok (destroy): ' . $e->getMessage());
             return redirect('/stok')->with('error', 'Gagal menghapus stok: ' . $e->getMessage());
+        }
+    }
+    public function export_pdf()
+    {
+        // Ambil data stok untuk ekspor
+        $stok = StokModel::selectRaw('barang_id, SUM(stok_jumlah) as total_stok')
+            ->groupBy('barang_id')
+            ->havingRaw('SUM(stok_jumlah) >= 0')
+            ->with('barang')
+            ->get();
+
+        // Gunakan library Barryvdh\DomPDF\Facade\Pdf
+        $pdf = FacadePdf::loadView('laporan_stok', ['stok' => $stok]);
+        $pdf->setPaper('a4', 'portrait'); // Set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // Set true untuk mengizinkan gambar dari URL
+        $pdf->render();
+
+        // Stream PDF ke browser dengan nama file dinamis
+        return $pdf->stream('Data Stok ' . date('Y-m-d H:i:s') . '.pdf');
+    }
+
+    public function export_excel()
+    {
+        // Pastikan tidak ada output sebelum header dikirim
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        // Periksa apakah ekstensi ZipArchive tersedia
+        if (!class_exists('ZipArchive')) {
+            \Log::error('ZipArchive not found during export in StokController');
+            return redirect()->back()->with('error', 'Gagal mengekspor data: Ekstensi ZipArchive tidak ditemukan. Silakan aktifkan ekstensi zip di PHP.');
+        }
+
+        try {
+            // Ambil data stok untuk ekspor
+            $stok = StokModel::selectRaw('barang_id, SUM(stok_jumlah) as total_stok')
+                ->groupBy('barang_id')
+                ->havingRaw('SUM(stok_jumlah) >= 0')
+                ->with('barang')
+                ->get();
+
+            // Periksa apakah ada data stok
+            if ($stok->isEmpty()) {
+                return redirect()->back()->with('error', 'Tidak ada data stok untuk diekspor.');
+            }
+
+            // Buat instance spreadsheet baru
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Buat header tabel
+            $sheet->setCellValue('A1', 'No');
+            $sheet->setCellValue('B1', 'Kode Barang');
+            $sheet->setCellValue('C1', 'Nama Barang');
+            $sheet->setCellValue('D1', 'Total Stok');
+
+            // Bold header
+            $sheet->getStyle('A1:D1')->getFont()->setBold(true);
+
+            // Tambahkan border pada header
+            $sheet->getStyle('A1:D1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Isi data stok
+            $no = 1;
+            $baris = 2;
+            foreach ($stok as $item) {
+                $sheet->setCellValue('A' . $baris, $no);
+                $sheet->setCellValue('B' . $baris, $item->barang->barang_kode ?? 'N/A');
+                $sheet->setCellValue('C' . $baris, $item->barang->barang_nama ?? 'N/A');
+                $sheet->setCellValue('D' . $baris, $item->total_stok);
+
+                $no++;
+                $baris++;
+            }
+
+            // Set lebar kolom secara otomatis
+            foreach (range('A', 'D') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Beri nama sheet
+            $sheet->setTitle('Data Stok');
+
+            // Buat writer untuk format Xlsx
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            // Buat nama file dengan format "Data Stok YYYY-MM-DD.xlsx"
+            $filename = 'Data Stok ' . date('Y-m-d') . '.xlsx';
+
+            // Set header untuk download file
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Pragma: no-cache');
+
+            // Simpan file ke output (download)
+            $writer->save('php://output');
+
+            // Bersihkan spreadsheet dari memori
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            // Hentikan eksekusi
+            exit;
+        } catch (\Exception $e) {
+            \Log::error('Export failed in StokController', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
         }
     }
 }

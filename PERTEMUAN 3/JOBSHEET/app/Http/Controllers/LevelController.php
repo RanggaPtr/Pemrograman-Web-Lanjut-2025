@@ -10,6 +10,19 @@ use Yajra\DataTables\Facades\DataTables;
 
 class LevelController extends Controller
 {
+/*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Display a listing of the levels.
+     *
+     * This method prepares the data required to display the list of levels
+     * in the system. It sets up the breadcrumb navigation, page title, and 
+     * active menu indicator. It also retrieves all level data for filtering
+     * purposes and returns a view with this data.
+     *
+     * @return \Illuminate\View\View
+     */
+
+/*******  347eb6f1-05b4-4ad0-9886-2e21773288d5  *******/
     public function index()
     {
         $breadcrumb = (object)[
