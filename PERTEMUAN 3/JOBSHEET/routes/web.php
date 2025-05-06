@@ -14,6 +14,7 @@ use App\Models\LevelModel;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Monolog\Level;
+use App\Http\Controllers\Api\RegisterController;
 
 /*
 |--------------------------------------------------------------------------
