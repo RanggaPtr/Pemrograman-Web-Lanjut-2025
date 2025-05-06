@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LevelController;
+use App\Http\Controllers\Api\PenjualanController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
@@ -47,4 +48,10 @@ use App\Http\Controllers\Api\UserController;
     Route::delete('barangs/{barang}', [BarangController::class, 'destroy']);
 
     Route::post('register1', App\Http\Controllers\Api\RegisterController::class);
+
+    Route::post('barangs', [BarangController::class, 'store']);
+    Route::get('barangs', [BarangController::class, 'index']);
+
+    Route::post('penjualans', [PenjualanController::class, 'store']);
+    Route::get('penjualans', [PenjualanController::class, 'index']);
 // });

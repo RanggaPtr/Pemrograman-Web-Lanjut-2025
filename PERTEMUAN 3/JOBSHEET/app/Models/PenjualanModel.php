@@ -18,6 +18,7 @@ class PenjualanModel extends Model
         'penjualan_kode',
         'penjualan_tanggal',
         'total_harga', // Tambahkan kolom untuk total harga
+        'image'
     ];
 
     protected $casts = [

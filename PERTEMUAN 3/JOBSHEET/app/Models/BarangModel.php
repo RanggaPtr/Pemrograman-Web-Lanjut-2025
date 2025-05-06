@@ -29,7 +29,7 @@ class BarangModel extends Model
     // - barang_nama: The product name
     // - harga_beli: The purchase price
     // - harga_jual: The selling price
-    protected $fillable = ['barang_id', 'kategori_id', 'barang_kode', 'barang_nama', 'harga_beli', 'harga_jual'];
+    protected $fillable = ['barang_id', 'kategori_id', 'barang_kode', 'barang_nama', 'harga_beli', 'harga_jual','image'];
 
     // Define a relationship indicating that each Barang belongs to one Kategori.
     // This sets up a "belongs to" relationship with the KategoriModel.
