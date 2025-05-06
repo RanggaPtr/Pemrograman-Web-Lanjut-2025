@@ -33,7 +33,7 @@ use App\Http\Controllers\Api\RegisterController;
 
 // Route::get('/level',[LevelController::class,'index']);
 // Route::get('/kategori',[KategoriController::class,'index']);
-// Route::get('/user',[UserController::class,'index']);
+
 
 Route::pattern('id', '[0-9]+'); // artinya ketika ada parameter {id}, maka harus berupa angka
 
