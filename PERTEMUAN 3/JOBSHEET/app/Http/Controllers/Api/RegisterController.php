@@ -1,59 +1,53 @@
 <?php
 namespace App\Http\Controllers\Api;
 
-use App\Models\UserModel;
 use App\Http\Controllers\Controller;
+use App\Models\UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Hash;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class RegisterController extends Controller
 {
     public function __invoke(Request $request)
     {
-        // Validasi input
+        // Set validation
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|unique:m_user,username|max:255',
-            'password' => 'required|string|min:6',
-            'nama' => 'required|string|max:255',
-            'level_id' => 'required|integer|exists:m_level,level_id',
-            'foto' => 'nullable|string', // Opsional, bisa berupa URL atau nama file
+            'username' => 'required',
+            'nama' => 'required',
+            'password' => 'required|min:5|confirmed',
+            'level_id' => 'required',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
 
-        // Jika validasi gagal, kembalikan error 422
+        // If validation fails
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json($validator->errors(), 422);
         }
 
-        // Buat pengguna baru
+        // Handle image upload
+        $imageName = $request->file('image')->hashName(); // Generate unique file name
+        $request->file('image')->storeAs('posts', $imageName, 'public'); // Store with the hashed name
+
+        // Create user
         $user = UserModel::create([
             'username' => $request->username,
-            'password' => Hash::make($request->password), // Hash password
             'nama' => $request->nama,
+            'password' => bcrypt($request->password),
             'level_id' => $request->level_id,
-            'foto' => $request->foto, // Nullable, akan null jika tidak diisi
+            'image' => $imageName // Save only the hashed file name
         ]);
 
-        // Buat token JWT untuk pengguna
-        try {
-            $token = JWTAuth::fromUser($user);
-        } catch (\Exception $e) {
+        // Return response JSON user is created
+        if ($user) {
             return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghasilkan token',
-            ], 500);
+                'success' => true,
+                'user' => $user,
+            ], 201);
         }
 
-        // Kembalikan respons sukses dengan data pengguna dan token
+        // Return JSON process insert failed
         return response()->json([
-            'success' => true,
-            'message' => 'Registrasi berhasil',
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+            'success' => false,
+        ], 409);
     }
 }

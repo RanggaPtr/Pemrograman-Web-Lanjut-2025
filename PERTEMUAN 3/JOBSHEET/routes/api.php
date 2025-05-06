@@ -45,4 +45,6 @@ use App\Http\Controllers\Api\UserController;
     Route::get('barangs/{barang}', [BarangController::class, 'show']);
     Route::put('barangs/{barang}', [BarangController::class, 'update']);
     Route::delete('barangs/{barang}', [BarangController::class, 'destroy']);
+
+    Route::post('register1', App\Http\Controllers\Api\RegisterController::class);
 // });
