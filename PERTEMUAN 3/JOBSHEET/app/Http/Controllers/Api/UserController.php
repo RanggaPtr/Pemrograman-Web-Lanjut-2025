@@ -2,6 +2,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\UserModel;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -27,5 +29,37 @@ class UserController extends Controller
         } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
             return response()->json(['success' => false, 'message' => 'Token tidak ditemukan'], 401);
         }
+    }
+
+    public function index()
+    {
+        $users = UserModel::all();
+        return response()->json($users, 200);
+    }
+
+    public function store(Request $request)
+    {
+        $user = UserModel::create($request->all());
+        return response()->json($user, 201);
+    }
+
+    public function show(UserModel $user)
+    {
+        return response()->json(UserModel::find($user), 200);
+    }
+
+    public function update(Request $request, UserModel $user)
+    {
+        $user->update($request->all());
+        return response()->json(UserModel::find($user), 200);
+    }
+
+    public function destroy(UserModel $user)
+    {
+        $user->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Data terhapus'
+        ], 200);
     }
 }
