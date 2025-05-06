@@ -17,4 +17,5 @@ Route::middleware('api')->group(function () {
     Route::post('register', App\Http\Controllers\Api\RegisterController::class)->name('api.register');
     Route::post('login', App\Http\Controllers\Api\LoginController::class)->name('api.login');
     Route::get('user', [UserController::class, 'getAuthenticatedUser'])->name('user');
+    Route::post('logout', App\Http\Controllers\Api\LogoutController::class)->name('logout');
 });
