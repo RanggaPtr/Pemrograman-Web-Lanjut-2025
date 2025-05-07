@@ -23,7 +23,7 @@ class PenjualanController extends Controller
             'user_id' => 'required|exists:m_user,user_id',
             'pembeli' => 'required|string|max:50',
             'penjualan_kode' => 'required|string|max:20|unique:t_penjualan,penjualan_kode',
-            'penjualan_tanggal' => 'required|date',
+            'penjualan_tanggal' => now(),
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
 

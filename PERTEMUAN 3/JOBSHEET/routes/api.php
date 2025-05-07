@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\UserController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-// Route::middleware('api')->group(function () {
+Route::middleware('auth:api')->group(function () {
     Route::post('register', App\Http\Controllers\Api\RegisterController::class)->name('api.register');
     Route::post('login', App\Http\Controllers\Api\LoginController::class)->name('api.login');
     Route::get('user', [UserController::class, 'getAuthenticatedUser'])->name('user');
@@ -54,4 +54,5 @@ use App\Http\Controllers\Api\UserController;
 
     Route::post('penjualans', [PenjualanController::class, 'store']);
     Route::get('penjualans', [PenjualanController::class, 'index']);
-// });
+});
+
